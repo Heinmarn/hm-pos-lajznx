@@ -68,6 +68,17 @@ export interface SalesReport {
 
 export type Language = 'en' | 'mm';
 
+export interface PaymentQRSettings {
+  kbzpay?: {
+    qrCodeUri?: string;
+    phoneNumber?: string;
+  };
+  wavepay?: {
+    qrCodeUri?: string;
+    phoneNumber?: string;
+  };
+}
+
 export interface AppSettings {
   language: Language;
   taxRate?: number;
@@ -75,4 +86,5 @@ export interface AppSettings {
   notifications?: boolean;
   autoPrint?: boolean;
   darkMode?: boolean;
+  paymentQR?: PaymentQRSettings;
 }

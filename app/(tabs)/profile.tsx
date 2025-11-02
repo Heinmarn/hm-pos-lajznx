@@ -152,6 +152,19 @@ export default function ProfileScreen() {
                 </View>
                 <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.settingItem, { backgroundColor: colors.card }]}
+                onPress={() => router.push('/(tabs)/(home)/payment-settings')}
+              >
+                <View style={styles.settingInfo}>
+                  <IconSymbol name="qrcode" size={24} color={colors.primary} />
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    {language === 'en' ? 'Payment QR Settings' : 'ငွေပေးချေမှု QR ဆက်တင်များ'}
+                  </Text>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
             </View>
           )}
 

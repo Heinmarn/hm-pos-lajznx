@@ -20,7 +20,7 @@ import { PaymentMethod } from '@/types';
 export default function PaymentScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { updateOrder, language, orders, darkMode } = useApp();
+  const { updateOrder, language, orders, darkMode, settings } = useApp();
   const t = translations[language];
   const colors = getColors(darkMode);
 
@@ -159,7 +159,7 @@ export default function PaymentScreen() {
       fontWeight: '600',
       color: colors.text,
     },
-    qrInfoCard: {
+    qrDisplayCard: {
       backgroundColor: colors.card,
       padding: 24,
       borderRadius: 12,
@@ -167,24 +167,58 @@ export default function PaymentScreen() {
       borderWidth: 1,
       borderColor: colors.border,
     },
-    qrInfoTitle: {
-      fontSize: 18,
+    qrDisplayTitle: {
+      fontSize: 20,
       fontWeight: '700',
       color: colors.text,
-      marginTop: 12,
-      marginBottom: 8,
+      marginBottom: 16,
+      textAlign: 'center',
     },
-    qrInfoText: {
+    qrCodeImage: {
+      width: 250,
+      height: 250,
+      borderRadius: 8,
+      marginBottom: 16,
+      backgroundColor: '#FFFFFF',
+    },
+    phoneNumberContainer: {
+      backgroundColor: colors.background,
+      padding: 16,
+      borderRadius: 8,
+      width: '100%',
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    phoneNumberLabel: {
       fontSize: 14,
       color: colors.textSecondary,
-      textAlign: 'center',
-      marginBottom: 12,
+      marginBottom: 4,
+    },
+    phoneNumber: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.primary,
+      letterSpacing: 1,
     },
     qrInfoNote: {
-      fontSize: 12,
-      color: colors.info,
+      fontSize: 13,
+      color: colors.textSecondary,
       textAlign: 'center',
+      marginTop: 12,
       fontStyle: 'italic',
+    },
+    noQrWarning: {
+      backgroundColor: colors.warning + '20',
+      borderLeftWidth: 4,
+      borderLeftColor: colors.warning,
+      padding: 12,
+      borderRadius: 8,
+      marginTop: 12,
+    },
+    warningText: {
+      fontSize: 13,
+      color: colors.text,
+      lineHeight: 20,
     },
     bottomBar: {
       position: 'absolute',
@@ -282,6 +316,32 @@ export default function PaymentScreen() {
     }
   };
 
+  // Get QR code and phone number for selected payment method
+  const getPaymentInfo = () => {
+    if (!selectedMethod || selectedMethod === 'cash') return null;
+
+    const paymentQR = settings.paymentQR;
+    if (!paymentQR) return null;
+
+    if (selectedMethod === 'kbzpay') {
+      return {
+        qrCodeUri: paymentQR.kbzpay?.qrCodeUri,
+        phoneNumber: paymentQR.kbzpay?.phoneNumber,
+        label: 'KBZ Pay',
+      };
+    } else if (selectedMethod === 'wavepay') {
+      return {
+        qrCodeUri: paymentQR.wavepay?.qrCodeUri,
+        phoneNumber: paymentQR.wavepay?.phoneNumber,
+        label: 'Wave Pay',
+      };
+    }
+
+    return null;
+  };
+
+  const paymentInfo = getPaymentInfo();
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -361,18 +421,58 @@ export default function PaymentScreen() {
           ))}
         </View>
 
-        {/* QR Code Info for Digital Payments */}
-        {selectedMethod && selectedMethod !== 'cash' && (
+        {/* QR Code Display for Digital Payments */}
+        {selectedMethod && selectedMethod !== 'cash' && paymentInfo && (
           <View style={styles.section}>
-            <View style={styles.qrInfoCard}>
-              <IconSymbol name="qrcode" size={48} color={colors.primary} />
-              <Text style={styles.qrInfoTitle}>Scan QR Code</Text>
-              <Text style={styles.qrInfoText}>
-                Show the {selectedMethod === 'kbzpay' ? 'KBZ Pay' : 'Wave Pay'} QR code to the customer
+            <View style={styles.qrDisplayCard}>
+              <Text style={styles.qrDisplayTitle}>
+                {language === 'en' 
+                  ? `Scan ${paymentInfo.label} QR Code` 
+                  : `${paymentInfo.label} QR ကုဒ်ကို စကင်န်ဖတ်ပါ`}
               </Text>
-              <Text style={styles.qrInfoNote}>
-                Note: QR code scanning feature will be available in the next update
-              </Text>
+
+              {paymentInfo.qrCodeUri ? (
+                <>
+                  <Image 
+                    source={{ uri: paymentInfo.qrCodeUri }} 
+                    style={styles.qrCodeImage}
+                  />
+                  
+                  {paymentInfo.phoneNumber && (
+                    <View style={styles.phoneNumberContainer}>
+                      <Text style={styles.phoneNumberLabel}>
+                        {language === 'en' 
+                          ? 'Or use phone number:' 
+                          : 'သို့မဟုတ် ဖုန်းနံပါတ်ကို အသုံးပြုပါ:'}
+                      </Text>
+                      <Text style={styles.phoneNumber}>{paymentInfo.phoneNumber}</Text>
+                    </View>
+                  )}
+
+                  <Text style={styles.qrInfoNote}>
+                    {language === 'en'
+                      ? 'Customer can scan this QR code or use the phone number to make payment'
+                      : 'ဖောက်သည်သည် ဤ QR ကုဒ်ကို စကင်န်ဖတ်နိုင်သည် သို့မဟုတ် ဖုန်းနံပါတ်ကို အသုံးပြု၍ ငွေပေးချေနိုင်ပါသည်'}
+                  </Text>
+                </>
+              ) : (
+                <View style={styles.noQrWarning}>
+                  <IconSymbol name="exclamationmark.triangle.fill" size={24} color={colors.warning} />
+                  <Text style={styles.warningText}>
+                    {language === 'en'
+                      ? `No QR code uploaded for ${paymentInfo.label}. Please go to Settings > Payment QR Settings to upload a QR code.`
+                      : `${paymentInfo.label} အတွက် QR ကုဒ် မတင်ရသေးပါ။ ဆက်တင်များ > ငွေပေးချေမှု QR ဆက်တင်များ သို့သွား၍ QR ကုဒ်တင်ပါ။`}
+                  </Text>
+                  {paymentInfo.phoneNumber && (
+                    <View style={[styles.phoneNumberContainer, { marginTop: 12 }]}>
+                      <Text style={styles.phoneNumberLabel}>
+                        {language === 'en' ? 'Phone number:' : 'ဖုန်းနံပါတ်:'}
+                      </Text>
+                      <Text style={styles.phoneNumber}>{paymentInfo.phoneNumber}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
           </View>
         )}
