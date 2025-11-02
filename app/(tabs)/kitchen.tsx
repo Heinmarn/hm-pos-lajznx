@@ -9,20 +9,22 @@ import { translations } from '@/utils/translations';
 import { Order, OrderStatus } from '@/types';
 
 export default function KitchenScreen() {
-  const { orders, updateOrder, language } = useApp();
+  const { orders, updateOrder, language, menuItems } = useApp();
   const t = translations[language];
-  const [filter, setFilter] = useState<'active' | 'all'>('active');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'preparing'>('all');
 
-  const activeOrders = orders.filter(
-    order => order.status === 'pending' || order.status === 'preparing'
+  const activeOrders = orders.filter(order => 
+    order.status !== 'completed' && order.status !== 'cancelled'
   );
 
-  const displayOrders = filter === 'active' ? activeOrders : orders;
+  const filteredOrders = filter === 'all' 
+    ? activeOrders 
+    : activeOrders.filter(order => order.status === filter);
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
       await updateOrder(orderId, { status: newStatus });
-      Alert.alert(t.success, `Order status updated to ${newStatus}`);
+      console.log(`Order ${orderId} status updated to ${newStatus}`);
     } catch (error) {
       console.error('Error updating order status:', error);
       Alert.alert(t.error, 'Failed to update order status');
@@ -34,81 +36,106 @@ export default function KitchenScreen() {
       case 'pending': return colors.warning;
       case 'preparing': return colors.info;
       case 'ready': return colors.success;
-      default: return colors.textSecondary;
+      case 'completed': return colors.textSecondary;
+      case 'cancelled': return colors.secondary;
+      default: return colors.text;
     }
   };
 
   const renderOrderItem = ({ item }: { item: Order }) => {
-    const canMarkPreparing = item.status === 'pending';
-    const canMarkReady = item.status === 'preparing';
+    // Get menu item details for each order item
+    const orderItemsWithDetails = item.items.map(orderItem => {
+      const menuItem = menuItems.find(mi => mi.id === orderItem.menuItemId);
+      return {
+        ...orderItem,
+        menuItem: menuItem || { 
+          id: orderItem.menuItemId, 
+          name: orderItem.name || 'Unknown Item',
+          nameMM: orderItem.name || 'Unknown Item',
+          price: orderItem.price,
+          category: '',
+          available: true
+        }
+      };
+    });
 
     return (
       <View style={styles.orderCard}>
         <View style={styles.orderHeader}>
           <View>
-            <Text style={styles.orderNumber}>{item.orderNumber}</Text>
-            <Text style={styles.orderTable}>Table: {item.tableNumber}</Text>
+            <Text style={styles.orderNumber}>{item.orderNumber || `#${item.id.slice(0, 8)}`}</Text>
+            <Text style={styles.orderTable}>
+              {language === 'en' ? 'Table' : 'စားပွဲ'}: {item.tableNumber}
+            </Text>
+            <Text style={styles.orderTime}>
+              {new Date(item.createdAt).toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
             <Text style={styles.statusText}>{t[item.status]}</Text>
           </View>
         </View>
 
-        <View style={styles.orderTime}>
-          <IconSymbol name="clock.fill" color={colors.textSecondary} size={16} />
-          <Text style={styles.timeText}>
-            {new Date(item.createdAt).toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
-        </View>
-
         <View style={styles.itemsList}>
-          {item.items.map((orderItem, index) => {
-            // Safe access to menuItem properties with fallback to orderItem.name
-            const itemName = orderItem.menuItem 
-              ? (language === 'mm' ? orderItem.menuItem.nameMM || orderItem.menuItem.name : orderItem.menuItem.name)
-              : orderItem.name;
-
-            return (
-              <View key={index} style={styles.itemRow}>
-                <View style={styles.quantityBadge}>
-                  <Text style={styles.quantityText}>{orderItem.quantity}x</Text>
-                </View>
-                <Text style={styles.itemName}>
-                  {itemName}
-                </Text>
+          {orderItemsWithDetails.map((orderItem, index) => (
+            <View key={index} style={styles.itemRow}>
+              <View style={styles.quantityBadge}>
+                <Text style={styles.quantityText}>{orderItem.quantity}x</Text>
               </View>
-            );
-          })}
+              <Text style={styles.itemName}>
+                {language === 'mm' && orderItem.menuItem?.nameMM 
+                  ? orderItem.menuItem.nameMM 
+                  : orderItem.menuItem?.name || orderItem.name}
+              </Text>
+            </View>
+          ))}
         </View>
 
-        {(canMarkPreparing || canMarkReady) && (
-          <View style={styles.actionButtons}>
-            {canMarkPreparing && (
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: colors.info }]}
-                onPress={() => handleUpdateStatus(item.id, 'preparing')}
-              >
-                <IconSymbol name="flame.fill" color="#FFFFFF" size={20} />
-                <Text style={styles.actionButtonText}>{t.markPreparing}</Text>
-              </TouchableOpacity>
-            )}
-            {canMarkReady && (
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: colors.success }]}
-                onPress={() => handleUpdateStatus(item.id, 'ready')}
-              >
-                <IconSymbol name="checkmark.circle.fill" color="#FFFFFF" size={20} />
-                <Text style={styles.actionButtonText}>{t.markReady}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+        <View style={styles.actionButtons}>
+          {item.status === 'pending' && (
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.info }]}
+              onPress={() => handleUpdateStatus(item.id, 'preparing')}
+            >
+              <IconSymbol name="flame.fill" color="#FFFFFF" size={20} />
+              <Text style={styles.actionButtonText}>{t.markPreparing}</Text>
+            </TouchableOpacity>
+          )}
+
+          {item.status === 'preparing' && (
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.success }]}
+              onPress={() => handleUpdateStatus(item.id, 'ready')}
+            >
+              <IconSymbol name="checkmark.circle.fill" color="#FFFFFF" size={20} />
+              <Text style={styles.actionButtonText}>{t.markReady}</Text>
+            </TouchableOpacity>
+          )}
+
+          {item.status === 'ready' && (
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              onPress={() => handleUpdateStatus(item.id, 'completed')}
+            >
+              <IconSymbol name="checkmark.circle.fill" color="#FFFFFF" size={20} />
+              <Text style={styles.actionButtonText}>
+                {language === 'en' ? 'Complete' : 'ပြီးစီးပြီ'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     );
   };
+
+  const filters: Array<{ key: 'all' | 'pending' | 'preparing'; label: string }> = [
+    { key: 'all', label: t.all },
+    { key: 'pending', label: t.pending },
+    { key: 'preparing', label: t.preparing },
+  ];
 
   return (
     <>
@@ -122,27 +149,36 @@ export default function KitchenScreen() {
       <View style={commonStyles.container}>
         {/* Filter Tabs */}
         <View style={styles.filterContainer}>
-          <TouchableOpacity
-            style={[styles.filterTab, filter === 'active' && styles.filterTabActive]}
-            onPress={() => setFilter('active')}
-          >
-            <Text style={[styles.filterTabText, filter === 'active' && styles.filterTabTextActive]}>
-              Active ({activeOrders.length})
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
-            onPress={() => setFilter('all')}
-          >
-            <Text style={[styles.filterTabText, filter === 'all' && styles.filterTabTextActive]}>
-              {t.all} ({orders.length})
-            </Text>
-          </TouchableOpacity>
+          <FlatList
+            horizontal
+            data={filters}
+            keyExtractor={(item) => item.key}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.filterTab,
+                  filter === item.key && styles.filterTabActive,
+                ]}
+                onPress={() => setFilter(item.key)}
+              >
+                <Text
+                  style={[
+                    styles.filterTabText,
+                    filter === item.key && styles.filterTabTextActive,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            )}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterList}
+          />
         </View>
 
         {/* Orders List */}
         <FlatList
-          data={displayOrders}
+          data={filteredOrders}
           renderItem={renderOrderItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
@@ -153,7 +189,7 @@ export default function KitchenScreen() {
             <View style={styles.emptyContainer}>
               <IconSymbol name="checkmark.circle.fill" color={colors.success} size={64} />
               <Text style={styles.emptyText}>
-                {filter === 'active' ? 'No active orders' : t.empty}
+                {language === 'en' ? 'All orders completed!' : 'အော်ဒါအားလုံးပြီးစီးပါပြီ!'}
               </Text>
             </View>
           }
@@ -166,20 +202,21 @@ export default function KitchenScreen() {
 
 const styles = StyleSheet.create({
   filterContainer: {
-    flexDirection: 'row',
     backgroundColor: colors.card,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  filterList: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 12,
+    gap: 8,
   },
   filterTab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: colors.highlight,
-    alignItems: 'center',
+    marginRight: 8,
   },
   filterTabActive: {
     backgroundColor: colors.primary,
@@ -211,7 +248,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   orderNumber: {
     fontSize: 20,
@@ -221,8 +261,12 @@ const styles = StyleSheet.create({
   },
   orderTable: {
     fontSize: 16,
+    color: colors.text,
+    marginBottom: 4,
+  },
+  orderTime: {
+    fontSize: 14,
     color: colors.textSecondary,
-    fontWeight: '600',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -231,23 +275,12 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#FFFFFF',
-    textTransform: 'uppercase',
-  },
-  orderTime: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 16,
-  },
-  timeText: {
-    fontSize: 14,
-    color: colors.textSecondary,
   },
   itemsList: {
-    gap: 12,
     marginBottom: 16,
+    gap: 8,
   },
   itemRow: {
     flexDirection: 'row',
@@ -256,37 +289,30 @@ const styles = StyleSheet.create({
   },
   quantityBadge: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    minWidth: 50,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    minWidth: 40,
     alignItems: 'center',
   },
   quantityText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   itemName: {
-    flex: 1,
     fontSize: 16,
     color: colors.text,
-    fontWeight: '500',
+    flex: 1,
   },
   actionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 12,
+    gap: 8,
   },
   actionButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    padding: 12,
     borderRadius: 8,
     gap: 8,
   },

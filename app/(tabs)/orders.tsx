@@ -10,7 +10,7 @@ import { Order, OrderStatus } from '@/types';
 
 export default function OrdersScreen() {
   const router = useRouter();
-  const { orders, language } = useApp();
+  const { orders, language, menuItems } = useApp();
   const t = translations[language];
   const [filter, setFilter] = useState<'all' | OrderStatus>('all');
 
@@ -32,56 +32,117 @@ export default function OrdersScreen() {
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return colors.success;
-      case 'pending': return colors.warning;
+      case 'unpaid': return colors.warning;
       case 'refunded': return colors.secondary;
       default: return colors.text;
     }
   };
 
-  const renderOrderItem = ({ item }: { item: Order }) => (
-    <TouchableOpacity
-      style={styles.orderCard}
-      onPress={() => router.push(`/order-details?id=${item.id}`)}
-    >
-      <View style={styles.orderHeader}>
-        <View>
-          <Text style={styles.orderNumber}>{item.orderNumber}</Text>
-          <Text style={styles.orderTable}>Table: {item.tableNumber}</Text>
-        </View>
-        <View style={styles.orderBadges}>
-          <View style={[styles.badge, { backgroundColor: getStatusColor(item.status) }]}>
-            <Text style={styles.badgeText}>{t[item.status]}</Text>
+  const getPaymentMethodLabel = (method?: string) => {
+    if (!method) return '';
+    switch (method) {
+      case 'cash': return language === 'en' ? 'Cash' : 'ငွေသား';
+      case 'kbzpay': return 'KBZ Pay';
+      case 'wavepay': return 'Wave Pay';
+      default: return method;
+    }
+  };
+
+  const renderOrderItem = ({ item }: { item: Order }) => {
+    // Get menu item details for each order item
+    const orderItemsWithDetails = item.items.map(orderItem => {
+      const menuItem = menuItems.find(mi => mi.id === orderItem.menuItemId);
+      return {
+        ...orderItem,
+        menuItem: menuItem || { 
+          id: orderItem.menuItemId, 
+          name: orderItem.name || 'Unknown Item',
+          nameMM: orderItem.name || 'Unknown Item',
+          price: orderItem.price,
+          category: '',
+          available: true
+        }
+      };
+    });
+
+    return (
+      <TouchableOpacity
+        style={styles.orderCard}
+        onPress={() => {
+          // Navigate to payment screen if unpaid, otherwise just view details
+          if (item.paymentStatus === 'unpaid') {
+            router.push(`/payment?orderId=${item.id}`);
+          }
+        }}
+      >
+        <View style={styles.orderHeader}>
+          <View>
+            <Text style={styles.orderNumber}>{item.orderNumber || `#${item.id.slice(0, 8)}`}</Text>
+            <Text style={styles.orderTable}>
+              {language === 'en' ? 'Table' : 'စားပွဲ'}: {item.tableNumber}
+            </Text>
+          </View>
+          <View style={styles.orderBadges}>
+            <View style={[styles.badge, { backgroundColor: getStatusColor(item.status) }]}>
+              <Text style={styles.badgeText}>{t[item.status]}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.orderItems}>
-        {item.items.slice(0, 2).map((orderItem, index) => (
-          <Text key={index} style={styles.orderItemText}>
-            {orderItem.quantity}x {language === 'mm' ? orderItem.menuItem.nameMM : orderItem.menuItem.name}
-          </Text>
-        ))}
-        {item.items.length > 2 && (
-          <Text style={styles.orderItemText}>+{item.items.length - 2} more items</Text>
-        )}
-      </View>
-
-      <View style={styles.orderFooter}>
-        <View>
-          <Text style={styles.orderTotal}>{item.total.toLocaleString()} MMK</Text>
-          <Text style={[styles.paymentStatus, { color: getPaymentStatusColor(item.paymentStatus) }]}>
-            {t[item.paymentStatus]}
-          </Text>
+        <View style={styles.orderItems}>
+          {orderItemsWithDetails.slice(0, 2).map((orderItem, index) => (
+            <Text key={index} style={styles.orderItemText}>
+              {orderItem.quantity}x {language === 'mm' && orderItem.menuItem?.nameMM 
+                ? orderItem.menuItem.nameMM 
+                : orderItem.menuItem?.name || orderItem.name}
+            </Text>
+          ))}
+          {item.items.length > 2 && (
+            <Text style={styles.orderItemText}>
+              +{item.items.length - 2} {language === 'en' ? 'more items' : 'ပစ္စည်းများ'}
+            </Text>
+          )}
         </View>
-        <Text style={styles.orderTime}>
-          {new Date(item.createdAt).toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+
+        <View style={styles.orderFooter}>
+          <View>
+            <Text style={styles.orderTotal}>
+              {item.total.toLocaleString()} {t.currencySymbol}
+            </Text>
+            <View style={styles.paymentStatusContainer}>
+              <Text style={[styles.paymentStatus, { color: getPaymentStatusColor(item.paymentStatus) }]}>
+                {t[item.paymentStatus]}
+              </Text>
+              {item.paymentMethod && item.paymentStatus === 'paid' && (
+                <Text style={styles.paymentMethod}>
+                  • {getPaymentMethodLabel(item.paymentMethod)}
+                </Text>
+              )}
+            </View>
+          </View>
+          <View style={styles.orderTimeContainer}>
+            <Text style={styles.orderTime}>
+              {new Date(item.createdAt).toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </Text>
+            {item.paymentStatus === 'unpaid' && (
+              <TouchableOpacity 
+                style={styles.payButton}
+                onPress={() => router.push(`/payment?orderId=${item.id}`)}
+              >
+                <IconSymbol name="creditcard.fill" color="#FFFFFF" size={16} />
+                <Text style={styles.payButtonText}>
+                  {language === 'en' ? 'Pay' : 'ပေးချေရန်'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const filters: Array<{ key: 'all' | OrderStatus; label: string }> = [
     { key: 'all', label: t.all },
@@ -269,13 +330,41 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 4,
   },
+  paymentStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   paymentStatus: {
     fontSize: 12,
     fontWeight: '600',
   },
+  paymentMethod: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  orderTimeContainer: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
   orderTime: {
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  payButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  payButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   emptyContainer: {
     alignItems: 'center',

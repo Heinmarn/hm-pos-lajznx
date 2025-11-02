@@ -23,106 +23,9 @@ export default function NewOrderScreen() {
   const t = translations[language];
   const colors = getColors(darkMode);
 
-  const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
   const [tableNumber, setTableNumber] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-
-  const categories = ['all', ...new Set(menuItems.map(item => item.category))];
-
-  const filteredMenuItems = selectedCategory === 'all'
-    ? menuItems.filter(item => item.available)
-    : menuItems.filter(item => item.category === selectedCategory && item.available);
-
-  const addItemToOrder = (menuItemId: string) => {
-    const menuItem = menuItems.find(item => item.id === menuItemId);
-    if (!menuItem) return;
-
-    const existingItem = selectedItems.find(item => item.menuItemId === menuItemId);
-    
-    if (existingItem) {
-      setSelectedItems(
-        selectedItems.map(item =>
-          item.menuItemId === menuItemId
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
-      );
-    } else {
-      const newItem: OrderItem = {
-        menuItemId,
-        menuItem: menuItem, // Include full menu item reference
-        name: menuItem.name,
-        price: menuItem.price,
-        quantity: 1,
-      };
-      setSelectedItems([...selectedItems, newItem]);
-    }
-  };
-
-  const updateQuantity = (menuItemId: string, delta: number) => {
-    setSelectedItems(
-      selectedItems
-        .map(item =>
-          item.menuItemId === menuItemId
-            ? { ...item, quantity: item.quantity + delta }
-            : item
-        )
-        .filter(item => item.quantity > 0)
-    );
-  };
-
-  const calculateTotal = () => {
-    return selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  };
-
-  const handleSubmitOrder = async () => {
-    if (selectedItems.length === 0) {
-      Alert.alert(t.error || 'Error', 'Please add items to the order');
-      return;
-    }
-
-    if (!tableNumber.trim()) {
-      Alert.alert(t.error || 'Error', 'Please enter a table number');
-      return;
-    }
-
-    const newOrder: Order = {
-      id: `order-${Date.now()}`,
-      orderNumber: `#${Date.now().toString().slice(-6)}`,
-      items: selectedItems,
-      total: calculateTotal(),
-      status: 'pending' as OrderStatus,
-      tableNumber: tableNumber.trim(),
-      createdAt: new Date().toISOString(),
-      paymentStatus: 'unpaid',
-      paymentMethod: undefined,
-      createdBy: currentUser?.id || 'unknown',
-    };
-
-    try {
-      await addOrder(newOrder);
-      Alert.alert(
-        t.success || 'Success',
-        'Order created successfully',
-        [
-          {
-            text: 'View Orders',
-            onPress: () => router.replace('/(tabs)/orders'),
-          },
-          {
-            text: 'New Order',
-            onPress: () => {
-              setSelectedItems([]);
-              setTableNumber('');
-            },
-          },
-        ]
-      );
-    } catch (error) {
-      console.error('Error creating order:', error);
-      Alert.alert(t.error || 'Error', 'Failed to create order');
-    }
-  };
+  const [selectedItems, setSelectedItems] = useState<Map<string, number>>(new Map());
+  const [searchQuery, setSearchQuery] = useState('');
 
   const styles = StyleSheet.create({
     container: {
@@ -134,7 +37,6 @@ export default function NewOrderScreen() {
     },
     content: {
       padding: 16,
-      paddingBottom: 120,
     },
     section: {
       marginBottom: 24,
@@ -145,7 +47,7 @@ export default function NewOrderScreen() {
       color: colors.text,
       marginBottom: 12,
     },
-    tableInput: {
+    input: {
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
@@ -154,78 +56,23 @@ export default function NewOrderScreen() {
       fontSize: 16,
       color: colors.text,
     },
-    categoryContainer: {
-      gap: 8,
-    },
-    categoryButton: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 20,
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      marginBottom: 16,
     },
-    categoryButtonActive: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-    },
-    categoryButtonText: {
-      fontSize: 14,
+    searchInput: {
+      flex: 1,
+      padding: 12,
+      fontSize: 16,
       color: colors.text,
-      fontWeight: '600',
-    },
-    categoryButtonTextActive: {
-      color: '#FFFFFF',
-    },
-    menuGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 12,
     },
     menuItem: {
-      width: '48%',
-      backgroundColor: colors.card,
-      padding: 16,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    menuItemSelected: {
-      borderColor: colors.primary,
-      borderWidth: 2,
-    },
-    menuItemHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: 8,
-    },
-    menuItemName: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.text,
-      flex: 1,
-    },
-    quantityBadge: {
-      backgroundColor: colors.primary,
-      borderRadius: 12,
-      width: 24,
-      height: 24,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginLeft: 4,
-    },
-    quantityBadgeText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: '#FFFFFF',
-    },
-    menuItemPrice: {
-      fontSize: 14,
-      color: colors.primary,
-      fontWeight: '600',
-    },
-    selectedItem: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
@@ -233,21 +80,30 @@ export default function NewOrderScreen() {
       padding: 12,
       borderRadius: 8,
       marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
-    selectedItemInfo: {
+    menuItemSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary + '10',
+    },
+    menuItemInfo: {
       flex: 1,
     },
-    selectedItemName: {
-      fontSize: 14,
+    menuItemName: {
+      fontSize: 16,
       fontWeight: '600',
       color: colors.text,
       marginBottom: 4,
     },
-    selectedItemPrice: {
-      fontSize: 12,
+    menuItemPrice: {
+      fontSize: 14,
       color: colors.textSecondary,
     },
-    quantityControls: {
+    menuItemUnavailable: {
+      opacity: 0.5,
+    },
+    quantityControl: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
@@ -256,7 +112,7 @@ export default function NewOrderScreen() {
       width: 32,
       height: 32,
       borderRadius: 16,
-      backgroundColor: colors.border,
+      backgroundColor: colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -267,51 +123,176 @@ export default function NewOrderScreen() {
       minWidth: 24,
       textAlign: 'center',
     },
-    bottomBar: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
+    selectedItemsCard: {
       backgroundColor: colors.card,
+      borderRadius: 8,
       padding: 16,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      boxShadow: '0px -2px 8px rgba(0, 0, 0, 0.1)',
-      elevation: 8,
+      marginBottom: 16,
     },
-    totalContainer: {
+    selectedItem: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 12,
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    selectedItemLast: {
+      borderBottomWidth: 0,
+    },
+    selectedItemName: {
+      fontSize: 14,
+      color: colors.text,
+      flex: 1,
+    },
+    selectedItemPrice: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      marginLeft: 8,
+    },
+    totalRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 2,
+      borderTopColor: colors.border,
     },
     totalLabel: {
-      fontSize: 16,
+      fontSize: 18,
+      fontWeight: '700',
       color: colors.text,
-      fontWeight: '600',
     },
-    totalAmount: {
+    totalValue: {
       fontSize: 24,
       fontWeight: '700',
       color: colors.primary,
     },
     submitButton: {
-      width: '100%',
       backgroundColor: colors.primary,
-      paddingVertical: 12,
+      paddingVertical: 16,
       paddingHorizontal: 24,
       borderRadius: 8,
       alignItems: 'center',
-      justifyContent: 'center',
-      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      elevation: 2,
+      marginBottom: Platform.OS === 'ios' ? 20 : 100,
     },
-    buttonText: {
+    submitButtonDisabled: {
+      opacity: 0.5,
+    },
+    submitButtonText: {
       fontSize: 16,
       fontWeight: '600',
       color: '#FFFFFF',
     },
+    emptyText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      paddingVertical: 20,
+    },
   });
+
+  const filteredMenuItems = menuItems.filter(item => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(searchLower) ||
+      (item.nameMM && item.nameMM.includes(searchQuery))
+    );
+  });
+
+  const addItemToOrder = (menuItemId: string) => {
+    const item = menuItems.find(m => m.id === menuItemId);
+    if (!item || !item.available) return;
+
+    const newSelected = new Map(selectedItems);
+    const currentQty = newSelected.get(menuItemId) || 0;
+    newSelected.set(menuItemId, currentQty + 1);
+    setSelectedItems(newSelected);
+  };
+
+  const updateQuantity = (menuItemId: string, delta: number) => {
+    const newSelected = new Map(selectedItems);
+    const currentQty = newSelected.get(menuItemId) || 0;
+    const newQty = currentQty + delta;
+
+    if (newQty <= 0) {
+      newSelected.delete(menuItemId);
+    } else {
+      newSelected.set(menuItemId, newQty);
+    }
+
+    setSelectedItems(newSelected);
+  };
+
+  const calculateTotal = () => {
+    let total = 0;
+    selectedItems.forEach((quantity, menuItemId) => {
+      const item = menuItems.find(m => m.id === menuItemId);
+      if (item) {
+        total += item.price * quantity;
+      }
+    });
+    return total;
+  };
+
+  const handleSubmitOrder = async () => {
+    if (!tableNumber.trim()) {
+      Alert.alert(t.error, language === 'en' ? 'Please enter table number' : 'စားပွဲနံပါတ်ထည့်ပါ');
+      return;
+    }
+
+    if (selectedItems.size === 0) {
+      Alert.alert(t.error, language === 'en' ? 'Please select at least one item' : 'အနည်းဆုံးပစ္စည်းတစ်ခုရွေးပါ');
+      return;
+    }
+
+    try {
+      const orderItems: OrderItem[] = [];
+      selectedItems.forEach((quantity, menuItemId) => {
+        const menuItem = menuItems.find(m => m.id === menuItemId);
+        if (menuItem) {
+          orderItems.push({
+            menuItemId: menuItem.id,
+            menuItem: menuItem,
+            name: menuItem.name,
+            quantity,
+            price: menuItem.price,
+          });
+        }
+      });
+
+      const order: Order = {
+        id: Date.now().toString(),
+        orderNumber: `ORD-${Date.now().toString().slice(-6)}`,
+        tableNumber: tableNumber,
+        items: orderItems,
+        total: calculateTotal(),
+        status: 'pending' as OrderStatus,
+        paymentStatus: 'unpaid',
+        paymentMethod: undefined,
+        createdBy: currentUser?.id || 'unknown',
+        createdAt: new Date().toISOString(),
+      };
+
+      await addOrder(order);
+
+      Alert.alert(
+        t.success,
+        language === 'en' ? 'Order placed successfully' : 'အော်ဒါအောင်မြင်စွာတင်ပြီးပါပြီ',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      Alert.alert(t.error, language === 'en' ? 'Failed to place order' : 'အော်ဒါတင်ရန်မအောင်မြင်ပါ');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -322,133 +303,139 @@ export default function NewOrderScreen() {
       >
         {/* Table Number Input */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t.tableNumber || 'Table Number'}</Text>
+          <Text style={styles.sectionTitle}>{t.tableNumber}</Text>
           <TextInput
-            style={styles.tableInput}
-            placeholder="Enter table number"
+            style={styles.input}
+            placeholder={language === 'en' ? 'Enter table number' : 'စားပွဲနံပါတ်ထည့်ပါ'}
             placeholderTextColor={colors.textSecondary}
             value={tableNumber}
             onChangeText={setTableNumber}
-            keyboardType="number-pad"
+            keyboardType="numeric"
           />
         </View>
 
-        {/* Category Filter */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t.category || 'Category'}</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryContainer}
-          >
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category}
-                style={[
-                  styles.categoryButton,
-                  selectedCategory === category && styles.categoryButtonActive,
-                ]}
-                onPress={() => setSelectedCategory(category)}
-              >
-                <Text
-                  style={[
-                    styles.categoryButtonText,
-                    selectedCategory === category && styles.categoryButtonTextActive,
-                  ]}
-                >
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
+        {/* Selected Items Summary */}
+        {selectedItems.size > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t.selectedItems}</Text>
+            <View style={styles.selectedItemsCard}>
+              {Array.from(selectedItems.entries()).map(([menuItemId, quantity], index) => {
+                const item = menuItems.find(m => m.id === menuItemId);
+                if (!item) return null;
+
+                const itemTotal = item.price * quantity;
+                const isLast = index === selectedItems.size - 1;
+
+                return (
+                  <View
+                    key={menuItemId}
+                    style={[styles.selectedItem, isLast && styles.selectedItemLast]}
+                  >
+                    <Text style={styles.selectedItemName}>
+                      {quantity}x {language === 'mm' && item.nameMM ? item.nameMM : item.name}
+                    </Text>
+                    <Text style={styles.selectedItemPrice}>
+                      {itemTotal.toLocaleString()} {t.currencySymbol}
+                    </Text>
+                  </View>
+                );
+              })}
+
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>{t.total}:</Text>
+                <Text style={styles.totalValue}>
+                  {calculateTotal().toLocaleString()} {t.currencySymbol}
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Menu Items */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t.menu || 'Menu'}</Text>
-          <View style={styles.menuGrid}>
-            {filteredMenuItems.map((item) => {
-              const selectedItem = selectedItems.find(si => si.menuItemId === item.id);
-              const quantity = selectedItem?.quantity || 0;
+          <Text style={styles.sectionTitle}>{t.menu}</Text>
+
+          {/* Search Bar */}
+          <View style={styles.searchBar}>
+            <IconSymbol name="magnifyingglass" color={colors.textSecondary} size={20} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={t.search}
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+
+          {/* Menu Items List */}
+          {filteredMenuItems.length === 0 ? (
+            <Text style={styles.emptyText}>{t.empty}</Text>
+          ) : (
+            filteredMenuItems.map(item => {
+              const quantity = selectedItems.get(item.id) || 0;
+              const isSelected = quantity > 0;
 
               return (
                 <TouchableOpacity
                   key={item.id}
                   style={[
                     styles.menuItem,
-                    quantity > 0 && styles.menuItemSelected,
+                    isSelected && styles.menuItemSelected,
+                    !item.available && styles.menuItemUnavailable,
                   ]}
                   onPress={() => addItemToOrder(item.id)}
+                  disabled={!item.available}
                 >
-                  <View style={styles.menuItemHeader}>
-                    <Text style={styles.menuItemName} numberOfLines={2}>
-                      {item.name}
+                  <View style={styles.menuItemInfo}>
+                    <Text style={styles.menuItemName}>
+                      {language === 'mm' && item.nameMM ? item.nameMM : item.name}
                     </Text>
-                    {quantity > 0 && (
-                      <View style={styles.quantityBadge}>
-                        <Text style={styles.quantityBadgeText}>{quantity}</Text>
-                      </View>
-                    )}
+                    <Text style={styles.menuItemPrice}>
+                      {item.price.toLocaleString()} {t.currencySymbol}
+                    </Text>
                   </View>
-                  <Text style={styles.menuItemPrice}>
-                    {item.price.toLocaleString()} {t.currencySymbol || 'Ks'}
-                  </Text>
+
+                  {isSelected ? (
+                    <View style={styles.quantityControl}>
+                      <TouchableOpacity
+                        style={styles.quantityButton}
+                        onPress={() => updateQuantity(item.id, -1)}
+                      >
+                        <IconSymbol name="minus" color="#FFFFFF" size={16} />
+                      </TouchableOpacity>
+                      <Text style={styles.quantityText}>{quantity}</Text>
+                      <TouchableOpacity
+                        style={styles.quantityButton}
+                        onPress={() => updateQuantity(item.id, 1)}
+                      >
+                        <IconSymbol name="plus" color="#FFFFFF" size={16} />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <IconSymbol
+                      name={item.available ? 'plus.circle' : 'xmark.circle'}
+                      color={item.available ? colors.primary : colors.secondary}
+                      size={28}
+                    />
+                  )}
                 </TouchableOpacity>
               );
-            })}
-          </View>
+            })
+          )}
         </View>
 
-        {/* Selected Items */}
-        {selectedItems.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t.selectedItems || 'Selected Items'}</Text>
-            {selectedItems.map((item) => (
-              <View key={item.menuItemId} style={styles.selectedItem}>
-                <View style={styles.selectedItemInfo}>
-                  <Text style={styles.selectedItemName}>{item.name}</Text>
-                  <Text style={styles.selectedItemPrice}>
-                    {item.price.toLocaleString()} × {item.quantity} = {(item.price * item.quantity).toLocaleString()}
-                  </Text>
-                </View>
-                <View style={styles.quantityControls}>
-                  <TouchableOpacity
-                    style={styles.quantityButton}
-                    onPress={() => updateQuantity(item.menuItemId, -1)}
-                  >
-                    <IconSymbol name="minus" size={16} color={colors.text} />
-                  </TouchableOpacity>
-                  <Text style={styles.quantityText}>{item.quantity}</Text>
-                  <TouchableOpacity
-                    style={styles.quantityButton}
-                    onPress={() => updateQuantity(item.menuItemId, 1)}
-                  >
-                    <IconSymbol name="plus" size={16} color={colors.text} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
+        {/* Submit Button */}
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            (selectedItems.size === 0 || !tableNumber.trim()) && styles.submitButtonDisabled,
+          ]}
+          onPress={handleSubmitOrder}
+          disabled={selectedItems.size === 0 || !tableNumber.trim()}
+        >
+          <Text style={styles.submitButtonText}>{t.submitOrder}</Text>
+        </TouchableOpacity>
       </ScrollView>
-
-      {/* Bottom Bar */}
-      {selectedItems.length > 0 && (
-        <View style={styles.bottomBar}>
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalLabel}>{t.total || 'Total'}:</Text>
-            <Text style={styles.totalAmount}>
-              {calculateTotal().toLocaleString()} {t.currencySymbol || 'Ks'}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.submitButton}
-            onPress={handleSubmitOrder}
-          >
-            <Text style={styles.buttonText}>{t.submitOrder || 'Submit Order'}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 }
