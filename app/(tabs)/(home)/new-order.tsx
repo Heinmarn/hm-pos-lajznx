@@ -50,6 +50,7 @@ export default function NewOrderScreen() {
     } else {
       const newItem: OrderItem = {
         menuItemId,
+        menuItem: menuItem, // Include full menu item reference
         name: menuItem.name,
         price: menuItem.price,
         quantity: 1,
@@ -87,6 +88,7 @@ export default function NewOrderScreen() {
 
     const newOrder: Order = {
       id: `order-${Date.now()}`,
+      orderNumber: `#${Date.now().toString().slice(-6)}`,
       items: selectedItems,
       total: calculateTotal(),
       status: 'pending' as OrderStatus,

@@ -24,6 +24,7 @@ export interface MenuItem {
 
 export interface OrderItem {
   menuItemId: string;
+  menuItem: MenuItem; // Full menu item reference
   name: string;
   quantity: number;
   price: number;

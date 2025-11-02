@@ -65,16 +65,23 @@ export default function KitchenScreen() {
         </View>
 
         <View style={styles.itemsList}>
-          {item.items.map((orderItem, index) => (
-            <View key={index} style={styles.itemRow}>
-              <View style={styles.quantityBadge}>
-                <Text style={styles.quantityText}>{orderItem.quantity}x</Text>
+          {item.items.map((orderItem, index) => {
+            // Safe access to menuItem properties with fallback to orderItem.name
+            const itemName = orderItem.menuItem 
+              ? (language === 'mm' ? orderItem.menuItem.nameMM || orderItem.menuItem.name : orderItem.menuItem.name)
+              : orderItem.name;
+
+            return (
+              <View key={index} style={styles.itemRow}>
+                <View style={styles.quantityBadge}>
+                  <Text style={styles.quantityText}>{orderItem.quantity}x</Text>
+                </View>
+                <Text style={styles.itemName}>
+                  {itemName}
+                </Text>
               </View>
-              <Text style={styles.itemName}>
-                {language === 'mm' ? orderItem.menuItem.nameMM : orderItem.menuItem.name}
-              </Text>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {(canMarkPreparing || canMarkReady) && (
