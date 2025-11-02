@@ -102,56 +102,71 @@ export default function NewOrderScreen() {
       fontSize: 16,
       color: colors.text,
     },
-    menuItem: {
+    menuGridContainer: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 12,
+      justifyContent: 'flex-start',
+    },
+    menuItemCard: {
+      width: Platform.select({ ios: 100, android: 100, default: 110 }),
       backgroundColor: colors.card,
+      borderRadius: 12,
       padding: 12,
-      borderRadius: 8,
-      marginBottom: 8,
-      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
       borderColor: colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 3,
+      minHeight: 120,
     },
-    menuItemSelected: {
+    menuItemCardSelected: {
       borderColor: colors.primary,
-      backgroundColor: colors.primary + '10',
+      backgroundColor: colors.primary + '15',
+      transform: [{ scale: 1.02 }],
     },
-    menuItemInfo: {
-      flex: 1,
+    menuItemCardUnavailable: {
+      opacity: 0.4,
+      backgroundColor: colors.border,
+    },
+    menuItemIcon: {
+      marginBottom: 8,
     },
     menuItemName: {
-      fontSize: 16,
+      fontSize: 13,
       fontWeight: '600',
       color: colors.text,
+      textAlign: 'center',
       marginBottom: 4,
+      lineHeight: 16,
     },
     menuItemPrice: {
-      fontSize: 14,
+      fontSize: 12,
       color: colors.textSecondary,
+      fontWeight: '500',
+      textAlign: 'center',
     },
-    menuItemUnavailable: {
-      opacity: 0.5,
-    },
-    quantityControl: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    quantityButton: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+    quantityBadge: {
+      position: 'absolute',
+      top: -6,
+      right: -6,
       backgroundColor: colors.primary,
+      borderRadius: 12,
+      minWidth: 24,
+      height: 24,
       justifyContent: 'center',
       alignItems: 'center',
+      borderWidth: 2,
+      borderColor: colors.background,
     },
-    quantityText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.text,
-      minWidth: 24,
-      textAlign: 'center',
+    quantityBadgeText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '700',
     },
     selectedItemsCard: {
       backgroundColor: colors.card,
@@ -170,6 +185,12 @@ export default function NewOrderScreen() {
     selectedItemLast: {
       borderBottomWidth: 0,
     },
+    selectedItemLeft: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
     selectedItemName: {
       fontSize: 14,
       color: colors.text,
@@ -180,6 +201,27 @@ export default function NewOrderScreen() {
       fontWeight: '600',
       color: colors.text,
       marginLeft: 8,
+    },
+    quantityControl: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginRight: 8,
+    },
+    quantityButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    quantityText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      minWidth: 20,
+      textAlign: 'center',
     },
     totalRow: {
       flexDirection: 'row',
@@ -328,6 +370,24 @@ export default function NewOrderScreen() {
     }
   };
 
+  // Get icon name based on menu item category or name
+  const getMenuItemIcon = (item: any) => {
+    const name = item.name.toLowerCase();
+    const category = item.category?.toLowerCase() || '';
+
+    if (name.includes('salad') || name.includes('ဆလပ်')) return 'leaf.fill';
+    if (name.includes('mala') || name.includes('မာလာ')) return 'flame.fill';
+    if (name.includes('drink') || name.includes('water') || name.includes('ရေ')) return 'drop.fill';
+    if (name.includes('tea') || name.includes('လက်ဖက်')) return 'cup.and.saucer.fill';
+    if (name.includes('coffee') || name.includes('ကော်ဖီ')) return 'mug.fill';
+    if (name.includes('rice') || name.includes('ထမင်း')) return 'takeoutbag.and.cup.and.straw.fill';
+    if (name.includes('noodle') || name.includes('ခေါက်ဆွဲ')) return 'fork.knife';
+    if (category.includes('drink')) return 'drop.fill';
+    if (category.includes('food')) return 'fork.knife';
+    
+    return 'cart.fill';
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -384,9 +444,26 @@ export default function NewOrderScreen() {
                     key={menuItemId}
                     style={[styles.selectedItem, isLast && styles.selectedItemLast]}
                   >
-                    <Text style={styles.selectedItemName}>
-                      {quantity}x {language === 'mm' && item.nameMM ? item.nameMM : item.name}
-                    </Text>
+                    <View style={styles.selectedItemLeft}>
+                      <View style={styles.quantityControl}>
+                        <TouchableOpacity
+                          style={styles.quantityButton}
+                          onPress={() => updateQuantity(menuItemId, -1)}
+                        >
+                          <IconSymbol name="minus" color="#FFFFFF" size={14} />
+                        </TouchableOpacity>
+                        <Text style={styles.quantityText}>{quantity}</Text>
+                        <TouchableOpacity
+                          style={styles.quantityButton}
+                          onPress={() => updateQuantity(menuItemId, 1)}
+                        >
+                          <IconSymbol name="plus" color="#FFFFFF" size={14} />
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={styles.selectedItemName}>
+                        {language === 'mm' && item.nameMM ? item.nameMM : item.name}
+                      </Text>
+                    </View>
                     <Text style={styles.selectedItemPrice}>
                       {itemTotal.toLocaleString()} {t.currencySymbol}
                     </Text>
@@ -404,7 +481,7 @@ export default function NewOrderScreen() {
           </View>
         )}
 
-        {/* Menu Items */}
+        {/* Menu Items Grid */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.menu}</Text>
 
@@ -420,60 +497,56 @@ export default function NewOrderScreen() {
             />
           </View>
 
-          {/* Menu Items List */}
+          {/* Menu Items Grid */}
           {filteredMenuItems.length === 0 ? (
             <Text style={styles.emptyText}>{t.empty}</Text>
           ) : (
-            filteredMenuItems.map(item => {
-              const quantity = selectedItems.get(item.id) || 0;
-              const isSelected = quantity > 0;
+            <View style={styles.menuGridContainer}>
+              {filteredMenuItems.map(item => {
+                const quantity = selectedItems.get(item.id) || 0;
+                const isSelected = quantity > 0;
 
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[
-                    styles.menuItem,
-                    isSelected && styles.menuItemSelected,
-                    !item.available && styles.menuItemUnavailable,
-                  ]}
-                  onPress={() => addItemToOrder(item.id)}
-                  disabled={!item.available}
-                >
-                  <View style={styles.menuItemInfo}>
-                    <Text style={styles.menuItemName}>
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.menuItemCard,
+                      isSelected && styles.menuItemCardSelected,
+                      !item.available && styles.menuItemCardUnavailable,
+                    ]}
+                    onPress={() => addItemToOrder(item.id)}
+                    disabled={!item.available}
+                    activeOpacity={0.7}
+                  >
+                    {isSelected && (
+                      <View style={styles.quantityBadge}>
+                        <Text style={styles.quantityBadgeText}>{quantity}</Text>
+                      </View>
+                    )}
+                    
+                    <View style={styles.menuItemIcon}>
+                      <IconSymbol
+                        name={getMenuItemIcon(item)}
+                        color={!item.available ? colors.textSecondary : isSelected ? colors.primary : colors.text}
+                        size={36}
+                      />
+                    </View>
+                    
+                    <Text 
+                      style={styles.menuItemName}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                    >
                       {language === 'mm' && item.nameMM ? item.nameMM : item.name}
                     </Text>
+                    
                     <Text style={styles.menuItemPrice}>
                       {item.price.toLocaleString()} {t.currencySymbol}
                     </Text>
-                  </View>
-
-                  {isSelected ? (
-                    <View style={styles.quantityControl}>
-                      <TouchableOpacity
-                        style={styles.quantityButton}
-                        onPress={() => updateQuantity(item.id, -1)}
-                      >
-                        <IconSymbol name="minus" color="#FFFFFF" size={16} />
-                      </TouchableOpacity>
-                      <Text style={styles.quantityText}>{quantity}</Text>
-                      <TouchableOpacity
-                        style={styles.quantityButton}
-                        onPress={() => updateQuantity(item.id, 1)}
-                      >
-                        <IconSymbol name="plus" color="#FFFFFF" size={16} />
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <IconSymbol
-                      name={item.available ? 'plus.circle' : 'xmark.circle'}
-                      color={item.available ? colors.primary : colors.secondary}
-                      size={28}
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            })
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           )}
         </View>
 
