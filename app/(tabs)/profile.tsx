@@ -1,91 +1,279 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
+
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Switch,
+  Platform,
+} from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { useApp } from '@/contexts/AppContext';
+import { translations } from '@/utils/translations';
 
 export default function ProfileScreen() {
-  const theme = useTheme();
+  const router = useRouter();
+  const { currentUser, logout, language, setLanguage, settings, updateSettings } = useApp();
+  const t = translations[language];
+
+  const handleLogout = async () => {
+    Alert.alert(
+      t.logout || 'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: t.cancel || 'Cancel', style: 'cancel' },
+        {
+          text: t.logout || 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/login');
+          },
+        },
+      ]
+    );
+  };
+
+  const toggleLanguage = async () => {
+    const newLanguage = language === 'en' ? 'mm' : 'en';
+    await setLanguage(newLanguage);
+  };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.contentContainer,
-          Platform.OS !== 'ios' && styles.contentContainerWithTabBar
-        ]}
-      >
-        <GlassView style={[
-          styles.profileHeader,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <IconSymbol name="person.circle.fill" size={80} color={theme.colors.primary} />
-          <Text style={[styles.name, { color: theme.colors.text }]}>John Doe</Text>
-          <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>john.doe@example.com</Text>
-        </GlassView>
+    <>
+      <Stack.Screen
+        options={{
+          title: t.profile || 'Profile',
+          headerShown: Platform.OS === 'ios',
+        }}
+      />
+      <View style={commonStyles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.content,
+            Platform.OS !== 'ios' && styles.contentWithTabBar
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* User Info */}
+          <View style={styles.userCard}>
+            <View style={styles.avatarContainer}>
+              <IconSymbol name="person.circle.fill" size={80} color={colors.primary} />
+            </View>
+            <Text style={styles.userName}>{currentUser?.name || 'User'}</Text>
+            <Text style={styles.userEmail}>{currentUser?.email || 'user@example.com'}</Text>
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleText}>
+                {currentUser?.role.charAt(0).toUpperCase() + currentUser?.role.slice(1)}
+              </Text>
+            </View>
+          </View>
 
-        <GlassView style={[
-          styles.section,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <View style={styles.infoRow}>
-            <IconSymbol name="phone.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>+1 (555) 123-4567</Text>
+          {/* Settings */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t.settings || 'Settings'}</Text>
+
+            <View style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <IconSymbol name="globe" size={24} color={colors.primary} />
+                <Text style={styles.settingLabel}>
+                  {t.language || 'Language'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.languageButton}
+                onPress={toggleLanguage}
+              >
+                <Text style={styles.languageButtonText}>
+                  {language === 'en' ? 'English' : 'မြန်မာ'}
+                </Text>
+                <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <IconSymbol name="bell.fill" size={24} color={colors.primary} />
+                <Text style={styles.settingLabel}>
+                  {t.notifications || 'Notifications'}
+                </Text>
+              </View>
+              <Switch
+                value={settings.notifications}
+                onValueChange={(value) => updateSettings({ notifications: value })}
+                trackColor={{ false: colors.border, true: colors.success }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+
+            <View style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <IconSymbol name="printer.fill" size={24} color={colors.primary} />
+                <Text style={styles.settingLabel}>
+                  {t.autoPrint || 'Auto Print'}
+                </Text>
+              </View>
+              <Switch
+                value={settings.autoPrint}
+                onValueChange={(value) => updateSettings({ autoPrint: value })}
+                trackColor={{ false: colors.border, true: colors.success }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
           </View>
-          <View style={styles.infoRow}>
-            <IconSymbol name="location.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>San Francisco, CA</Text>
+
+          {/* App Info */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>About</Text>
+            <View style={commonStyles.card}>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>App Name:</Text>
+                <Text style={styles.infoValue}>H.M POS</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Version:</Text>
+                <Text style={styles.infoValue}>1.0.0</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Build:</Text>
+                <Text style={styles.infoValue}>2024.01</Text>
+              </View>
+            </View>
           </View>
-        </GlassView>
-      </ScrollView>
-    </SafeAreaView>
+
+          {/* Logout Button */}
+          <TouchableOpacity
+            style={[buttonStyles.danger, styles.logoutButton]}
+            onPress={handleLogout}
+          >
+            <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color="#FFFFFF" />
+            <Text style={[commonStyles.buttonText, styles.logoutButtonText]}>
+              {t.logout || 'Logout'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    // backgroundColor handled dynamically
-  },
-  container: {
+  scrollView: {
     flex: 1,
   },
-  contentContainer: {
-    padding: 20,
+  content: {
+    padding: 16,
+    paddingBottom: 20,
   },
-  contentContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
+  contentWithTabBar: {
+    paddingBottom: 100,
   },
-  profileHeader: {
-    alignItems: 'center',
+  userCard: {
+    backgroundColor: colors.card,
+    padding: 24,
     borderRadius: 12,
-    padding: 32,
+    alignItems: 'center',
+    marginBottom: 24,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  avatarContainer: {
     marginBottom: 16,
-    gap: 12,
   },
-  name: {
+  userName: {
     fontSize: 24,
-    fontWeight: 'bold',
-    // color handled dynamically
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
   },
-  email: {
-    fontSize: 16,
-    // color handled dynamically
+  userEmail: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 12,
+  },
+  roleBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  roleText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textTransform: 'capitalize',
   },
   section: {
-    borderRadius: 12,
-    padding: 20,
-    gap: 12,
+    marginBottom: 24,
   },
-  infoRow: {
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  settingInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
   },
-  infoText: {
+  settingLabel: {
     fontSize: 16,
-    // color handled dynamically
+    color: colors.text,
+    fontWeight: '500',
+  },
+  languageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: colors.border,
+    borderRadius: 8,
+  },
+  languageButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  logoutButtonText: {
+    marginLeft: 0,
   },
 });

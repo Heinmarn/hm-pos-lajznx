@@ -14,40 +14,37 @@ export interface User {
 export interface MenuItem {
   id: string;
   name: string;
-  nameMM: string; // Myanmar name
+  nameMM?: string; // Myanmar name (optional)
   price: number;
   category: string;
   available: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface OrderItem {
   menuItemId: string;
-  menuItem: MenuItem;
+  name: string;
   quantity: number;
   price: number;
-  subtotal: number;
 }
 
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 export type PaymentMethod = 'cash' | 'kbzpay' | 'wavepay';
-export type PaymentStatus = 'pending' | 'paid' | 'refunded';
+export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
 
 export interface Order {
   id: string;
-  orderNumber: string;
+  orderNumber?: string;
   tableNumber: string;
   items: OrderItem[];
-  subtotal: number;
-  tax: number;
   total: number;
   status: OrderStatus;
   paymentMethod?: PaymentMethod;
   paymentStatus: PaymentStatus;
   createdBy: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   completedAt?: string;
 }
 
@@ -72,6 +69,8 @@ export type Language = 'en' | 'mm';
 
 export interface AppSettings {
   language: Language;
-  taxRate: number;
-  currency: string;
+  taxRate?: number;
+  currency?: string;
+  notifications?: boolean;
+  autoPrint?: boolean;
 }

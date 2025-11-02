@@ -105,6 +105,22 @@ export const translations = {
     success: 'Success',
     confirm: 'Confirm',
     back: 'Back',
+    
+    // Additional
+    profile: 'Profile',
+    welcomeBack: 'Welcome Back',
+    demoAccounts: 'Demo Accounts',
+    admin: 'Admin',
+    cashier: 'Cashier',
+    loggingIn: 'Logging in...',
+    pleaseEnterCredentials: 'Please enter email and password',
+    invalidCredentials: 'Invalid email or password',
+    loginFailed: 'Login failed. Please try again.',
+    confirmDelete: 'Confirm Delete',
+    selectedItems: 'Selected Items',
+    submitOrder: 'Submit Order',
+    notifications: 'Notifications',
+    autoPrint: 'Auto Print',
   },
   mm: {
     // App name
@@ -209,6 +225,22 @@ export const translations = {
     success: 'အောင်မြင်ပါသည်',
     confirm: 'အတည်ပြုရန်',
     back: 'နောက်သို့',
+    
+    // Additional
+    profile: 'ကိုယ်ရေးအချက်အလက်',
+    welcomeBack: 'ပြန်လည်ကြိုဆိုပါတယ်',
+    demoAccounts: 'စမ်းသပ်အကောင့်များ',
+    admin: 'စီမံခန့်ခွဲသူ',
+    cashier: 'ငွေကောင်တာ',
+    loggingIn: 'ဝင်ရောက်နေသည်...',
+    pleaseEnterCredentials: 'အီးမေးလ်နှင့် စကားဝှက်ထည့်ပါ',
+    invalidCredentials: 'အီးမေးလ် သို့မဟုတ် စကားဝှက် မှားယွင်းနေပါသည်',
+    loginFailed: 'ဝင်ရောက်မှု မအောင်မြင်ပါ။ ထပ်မံကြိုးစားပါ။',
+    confirmDelete: 'ဖျက်ရန် အတည်ပြုပါ',
+    selectedItems: 'ရွေးချယ်ထားသော ပစ္စည်းများ',
+    submitOrder: 'အော်ဒါတင်ရန်',
+    notifications: 'အသိပေးချက်များ',
+    autoPrint: 'အလိုအလျောက်ပုံနှိပ်ရန်',
   },
 };
 

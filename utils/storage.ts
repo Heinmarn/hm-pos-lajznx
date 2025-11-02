@@ -119,6 +119,8 @@ export const getSettings = async (): Promise<AppSettings> => {
       language: 'en',
       taxRate: 0,
       currency: 'MMK',
+      notifications: true,
+      autoPrint: false,
     };
   } catch (error) {
     console.error('Error getting settings:', error);
@@ -126,6 +128,8 @@ export const getSettings = async (): Promise<AppSettings> => {
       language: 'en',
       taxRate: 0,
       currency: 'MMK',
+      notifications: true,
+      autoPrint: false,
     };
   }
 };

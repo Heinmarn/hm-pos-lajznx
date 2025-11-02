@@ -52,6 +52,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     language: 'en',
     taxRate: 0,
     currency: 'MMK',
+    notifications: true,
+    autoPrint: false,
   });
   const [loading, setLoading] = useState(true);
 
