@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -26,9 +26,38 @@ export default function NewOrderScreen() {
   const [tableNumber, setTableNumber] = useState('');
   const [selectedItems, setSelectedItems] = useState<Map<string, number>>(new Map());
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   // Number of tables available (you can make this configurable later)
   const totalTables = 10;
+
+  // Extract unique categories from menu items
+  const categories = useMemo(() => {
+    const uniqueCategories = new Set<string>();
+    menuItems.forEach(item => {
+      if (item.category) {
+        uniqueCategories.add(item.category);
+      }
+    });
+    return ['All', ...Array.from(uniqueCategories).sort()];
+  }, [menuItems]);
+
+  // Get category translations
+  const getCategoryTranslation = (category: string) => {
+    const translations: { [key: string]: { en: string; mm: string } } = {
+      'All': { en: 'All', mm: 'အားလုံး' },
+      'Salad': { en: 'Salad', mm: 'ဆလပ်' },
+      'Main Course': { en: 'Main Course', mm: 'ပင်မဟင်း' },
+      'Beverages': { en: 'Beverages', mm: 'ဖျော်ရည်များ' },
+      'Dessert': { en: 'Dessert', mm: 'အချိုပွဲ' },
+      'Appetizer': { en: 'Appetizer', mm: 'ခေါက်ဆွဲ' },
+    };
+
+    if (translations[category]) {
+      return language === 'mm' ? translations[category].mm : translations[category].en;
+    }
+    return category;
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -101,6 +130,36 @@ export default function NewOrderScreen() {
       padding: 12,
       fontSize: 16,
       color: colors.text,
+    },
+    categoryScrollContainer: {
+      marginBottom: 16,
+    },
+    categoryListContent: {
+      paddingRight: 16,
+    },
+    categoryButton: {
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      marginRight: 10,
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      borderWidth: 2,
+      borderColor: colors.border,
+      minWidth: 80,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    categoryButtonSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    categoryButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    categoryButtonTextSelected: {
+      color: '#FFFFFF',
     },
     menuGridContainer: {
       flexDirection: 'row',
@@ -266,13 +325,20 @@ export default function NewOrderScreen() {
     },
   });
 
-  const filteredMenuItems = menuItems.filter(item => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      item.name.toLowerCase().includes(searchLower) ||
-      (item.nameMM && item.nameMM.includes(searchQuery))
-    );
-  });
+  const filteredMenuItems = useMemo(() => {
+    return menuItems.filter(item => {
+      // Filter by category
+      const categoryMatch = selectedCategory === 'All' || item.category === selectedCategory;
+      
+      // Filter by search query
+      const searchLower = searchQuery.toLowerCase();
+      const searchMatch = searchQuery === '' || 
+        item.name.toLowerCase().includes(searchLower) ||
+        (item.nameMM && item.nameMM.includes(searchQuery));
+      
+      return categoryMatch && searchMatch;
+    });
+  }, [menuItems, selectedCategory, searchQuery]);
 
   const addItemToOrder = (menuItemId: string) => {
     const item = menuItems.find(m => m.id === menuItemId);
@@ -382,8 +448,8 @@ export default function NewOrderScreen() {
     if (name.includes('coffee') || name.includes('ကော်ဖီ')) return 'mug.fill';
     if (name.includes('rice') || name.includes('ထမင်း')) return 'takeoutbag.and.cup.and.straw.fill';
     if (name.includes('noodle') || name.includes('ခေါက်ဆွဲ')) return 'fork.knife';
-    if (category.includes('drink')) return 'drop.fill';
-    if (category.includes('food')) return 'fork.knife';
+    if (category.includes('drink') || category.includes('beverage')) return 'drop.fill';
+    if (category.includes('food') || category.includes('main')) return 'fork.knife';
     
     return 'cart.fill';
   };
@@ -497,9 +563,43 @@ export default function NewOrderScreen() {
             />
           </View>
 
+          {/* Category Filter Bar */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryScrollContainer}
+            contentContainerStyle={styles.categoryListContent}
+          >
+            {categories.map((category) => {
+              const isSelected = selectedCategory === category;
+              return (
+                <TouchableOpacity
+                  key={category}
+                  style={[
+                    styles.categoryButton,
+                    isSelected && styles.categoryButtonSelected,
+                  ]}
+                  onPress={() => setSelectedCategory(category)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.categoryButtonText,
+                      isSelected && styles.categoryButtonTextSelected,
+                    ]}
+                  >
+                    {getCategoryTranslation(category)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
           {/* Menu Items Grid */}
           {filteredMenuItems.length === 0 ? (
-            <Text style={styles.emptyText}>{t.empty}</Text>
+            <Text style={styles.emptyText}>
+              {language === 'en' ? 'No items found' : 'ပစ္စည်းမတွေ့ပါ'}
+            </Text>
           ) : (
             <View style={styles.menuGridContainer}>
               {filteredMenuItems.map(item => {
