@@ -19,7 +19,7 @@ import { getRoleDisplayName } from '@/utils/permissions';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { currentUser, logout, language, setLanguage, settings, updateSettings, darkMode, setDarkMode } = useApp();
+  const { currentUser, logout, language, setLanguage, settings, updateSettings, darkMode, setDarkMode, hasAdminPermission } = useApp();
   const t = translations[language];
   const colors = getColors(darkMode);
 
@@ -133,6 +133,28 @@ export default function ProfileScreen() {
             )}
           </View>
 
+          {/* Admin Section - Permission Management */}
+          {hasAdminPermission() && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {language === 'en' ? 'Admin Controls' : 'စီမံခန့်ခွဲသူ ထိန်းချုပ်မှုများ'}
+              </Text>
+              
+              <TouchableOpacity
+                style={[styles.settingItem, { backgroundColor: colors.card }]}
+                onPress={() => router.push('/(tabs)/(home)/permission-management')}
+              >
+                <View style={styles.settingInfo}>
+                  <IconSymbol name="lock.shield.fill" size={24} color={colors.primary} />
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    {language === 'en' ? 'Permission Management' : 'ခွင့်ပြုချက်စီမံခန့်ခွဲမှု'}
+                  </Text>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Settings */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{t.settings || 'Settings'}</Text>
@@ -216,6 +238,12 @@ export default function ProfileScreen() {
               <View style={styles.infoRow}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Build:</Text>
                 <Text style={[styles.infoValue, { color: colors.text }]}>2024.01</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Platform:</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {Platform.OS === 'ios' ? 'iOS' : Platform.OS === 'android' ? 'Android' : 'Web'}
+                </Text>
               </View>
             </View>
           </View>

@@ -1,5 +1,28 @@
 
-import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet, ViewStyle, TextStyle, Dimensions, Platform } from 'react-native';
+
+// Get device dimensions
+const { width, height } = Dimensions.get('window');
+
+// Determine if device is a tablet
+export const isTablet = () => {
+  const aspectRatio = height / width;
+  return (
+    (Platform.OS === 'ios' && (width >= 768 || height >= 768)) ||
+    (Platform.OS === 'android' && (width >= 600 || height >= 600)) ||
+    (Platform.OS === 'web' && width >= 768)
+  );
+};
+
+// Responsive padding based on device size
+export const getResponsivePadding = () => {
+  return isTablet() ? 24 : 16;
+};
+
+// Responsive font sizes
+export const getResponsiveFontSize = (baseSize: number) => {
+  return isTablet() ? baseSize * 1.2 : baseSize;
+};
 
 // Light Mode Colors
 export const lightColors = {

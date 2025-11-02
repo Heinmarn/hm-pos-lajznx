@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  Image,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -142,9 +143,15 @@ export default function PaymentScreen() {
     paymentIcon: {
       width: 56,
       height: 56,
-      borderRadius: 28,
+      borderRadius: 8,
       justifyContent: 'center',
       alignItems: 'center',
+      backgroundColor: '#FFFFFF',
+    },
+    paymentLogo: {
+      width: 48,
+      height: 48,
+      resizeMode: 'contain',
     },
     paymentLabel: {
       flex: 1,
@@ -226,7 +233,7 @@ export default function PaymentScreen() {
     );
   }
 
-  const paymentMethods: { method: PaymentMethod; icon: string; label: string; color: string }[] = [
+  const paymentMethods: { method: PaymentMethod; icon?: string; logo?: any; label: string; color: string }[] = [
     {
       method: 'cash',
       icon: 'banknote',
@@ -235,15 +242,15 @@ export default function PaymentScreen() {
     },
     {
       method: 'kbzpay',
-      icon: 'creditcard.fill',
+      logo: require('@/assets/images/b24fab8a-3896-4622-b407-f924944075a5.png'),
       label: 'KBZ Pay',
-      color: '#FF6B00',
+      color: '#0066CC',
     },
     {
       method: 'wavepay',
-      icon: 'wave.3.right',
+      logo: require('@/assets/images/2e9c8052-5237-484d-a850-ffa602c17f52.png'),
       label: 'Wave Pay',
-      color: '#00A3FF',
+      color: '#FFD700',
     },
   ];
 
@@ -337,8 +344,14 @@ export default function PaymentScreen() {
               ]}
               onPress={() => setSelectedMethod(method.method)}
             >
-              <View style={[styles.paymentIcon, { backgroundColor: method.color }]}>
-                <IconSymbol name={method.icon} size={28} color="#FFFFFF" />
+              <View style={styles.paymentIcon}>
+                {method.logo ? (
+                  <Image source={method.logo} style={styles.paymentLogo} />
+                ) : (
+                  <View style={[{ backgroundColor: method.color, width: 56, height: 56, borderRadius: 8, justifyContent: 'center', alignItems: 'center' }]}>
+                    <IconSymbol name={method.icon || 'banknote'} size={28} color="#FFFFFF" />
+                  </View>
+                )}
               </View>
               <Text style={styles.paymentLabel}>{method.label}</Text>
               {selectedMethod === method.method && (

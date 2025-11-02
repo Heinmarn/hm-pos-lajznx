@@ -43,6 +43,7 @@ interface AppContextType {
   currentUser: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  updateUserPermissions: (role: string, permissions: any) => Promise<void>;
   
   // Settings
   settings: AppSettings;
@@ -278,6 +279,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await updateSettingsHandler({ darkMode: enabled });
   };
 
+  const updateUserPermissions = async (role: string, permissions: any) => {
+    try {
+      console.log('Updating permissions for role:', role, permissions);
+      // In a real app, this would update the backend
+      // For now, we just log the changes
+    } catch (error) {
+      console.error('Error updating user permissions:', error);
+      throw error;
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -291,6 +303,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         currentUser,
         login,
         logout,
+        updateUserPermissions,
         settings,
         updateSettings: updateSettingsHandler,
         language: settings.language,
