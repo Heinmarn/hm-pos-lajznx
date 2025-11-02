@@ -126,6 +126,8 @@ export const translations = {
     autoPrint: 'Auto Print',
     logoutConfirm: 'Are you sure you want to logout?',
     switchAccountConfirm: 'You will be logged out and redirected to the login screen.',
+    permissionDenied: 'Permission Denied',
+    adminOnly: 'Admin Only',
   },
   mm: {
     // App name
@@ -251,6 +253,8 @@ export const translations = {
     autoPrint: 'အလိုအလျောက်ပုံနှိပ်ရန်',
     logoutConfirm: 'ထွက်ရန် သေချာပါသလား?',
     switchAccountConfirm: 'သင့်အကောင့်မှ ထွက်ပြီး လော့ဂ်အင်စာမျက်နှာသို့ ပြန်သွားပါမည်။',
+    permissionDenied: 'ခွင့်ပြုချက်ငြင်းပယ်ခံရသည်',
+    adminOnly: 'စီမံခန့်ခွဲသူသာ',
   },
 };
 

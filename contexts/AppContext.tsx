@@ -15,6 +15,17 @@ import {
 } from '@/utils/storage';
 import { sampleMenuItems, sampleUsers } from '@/utils/sampleData';
 import { setColorScheme } from '@/styles/commonStyles';
+import { 
+  hasAdminPermission, 
+  canEditMenu, 
+  canDeleteMenu, 
+  canAddMenuItem,
+  canUpdateMenuItem,
+  canCreateOrder,
+  canUpdateOrderStatus,
+  canProcessPayment,
+  canManageSettings,
+} from '@/utils/permissions';
 
 interface AppContextType {
   // Menu
@@ -40,6 +51,17 @@ interface AppContextType {
   setLanguage: (lang: Language) => Promise<void>;
   darkMode: boolean;
   setDarkMode: (enabled: boolean) => Promise<void>;
+  
+  // Permissions
+  hasAdminPermission: () => boolean;
+  canEditMenu: () => boolean;
+  canDeleteMenu: () => boolean;
+  canAddMenuItem: () => boolean;
+  canUpdateMenuItem: () => boolean;
+  canCreateOrder: () => boolean;
+  canUpdateOrderStatus: () => boolean;
+  canProcessPayment: () => boolean;
+  canManageSettings: () => boolean;
   
   // Loading
   loading: boolean;
@@ -105,36 +127,62 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  // Permission check functions
+  const checkHasAdminPermission = () => hasAdminPermission(currentUser);
+  const checkCanEditMenu = () => canEditMenu(currentUser);
+  const checkCanDeleteMenu = () => canDeleteMenu(currentUser);
+  const checkCanAddMenuItem = () => canAddMenuItem(currentUser);
+  const checkCanUpdateMenuItem = () => canUpdateMenuItem(currentUser);
+  const checkCanCreateOrder = () => canCreateOrder(currentUser);
+  const checkCanUpdateOrderStatus = () => canUpdateOrderStatus(currentUser);
+  const checkCanProcessPayment = () => canProcessPayment(currentUser);
+  const checkCanManageSettings = () => canManageSettings(currentUser);
+
   // Menu operations
-  const addMenuItem = async (item: MenuItem) => {
+  const addMenuItemHandler = async (item: MenuItem) => {
+    if (!checkCanAddMenuItem()) {
+      throw new Error('PERMISSION_DENIED');
+    }
+    
     try {
       const newItems = [...menuItems, item];
       await saveMenuItems(newItems);
       setMenuItems(newItems);
+      console.log('Menu item added by:', currentUser?.name);
     } catch (error) {
       console.error('Error adding menu item:', error);
       throw error;
     }
   };
 
-  const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
+  const updateMenuItemHandler = async (id: string, updates: Partial<MenuItem>) => {
+    if (!checkCanUpdateMenuItem()) {
+      throw new Error('PERMISSION_DENIED');
+    }
+    
     try {
       const newItems = menuItems.map(item =>
         item.id === id ? { ...item, ...updates, updatedAt: new Date().toISOString() } : item
       );
       await saveMenuItems(newItems);
       setMenuItems(newItems);
+      console.log('Menu item updated by:', currentUser?.name);
     } catch (error) {
       console.error('Error updating menu item:', error);
       throw error;
     }
   };
 
-  const deleteMenuItem = async (id: string) => {
+  const deleteMenuItemHandler = async (id: string) => {
+    if (!checkCanDeleteMenu()) {
+      throw new Error('PERMISSION_DENIED');
+    }
+    
     try {
       const newItems = menuItems.filter(item => item.id !== id);
       await saveMenuItems(newItems);
       setMenuItems(newItems);
+      console.log('Menu item deleted by:', currentUser?.name);
     } catch (error) {
       console.error('Error deleting menu item:', error);
       throw error;
@@ -142,22 +190,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Order operations
-  const addOrder = async (order: Order) => {
+  const addOrderHandler = async (order: Order) => {
+    if (!checkCanCreateOrder()) {
+      throw new Error('PERMISSION_DENIED');
+    }
+    
     try {
       await addOrderToStorage(order);
       const updatedOrders = await getOrders();
       setOrders(updatedOrders);
+      console.log('Order created by:', currentUser?.name);
     } catch (error) {
       console.error('Error adding order:', error);
       throw error;
     }
   };
 
-  const updateOrder = async (id: string, updates: Partial<Order>) => {
+  const updateOrderHandler = async (id: string, updates: Partial<Order>) => {
+    if (!checkCanUpdateOrderStatus()) {
+      throw new Error('PERMISSION_DENIED');
+    }
+    
     try {
       await updateOrderInStorage(id, updates);
       const updatedOrders = await getOrders();
       setOrders(updatedOrders);
+      console.log('Order updated by:', currentUser?.name);
     } catch (error) {
       console.error('Error updating order:', error);
       throw error;
@@ -172,6 +230,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (user) {
         await saveCurrentUser(user);
         setCurrentUser(user);
+        console.log('User logged in:', user.name, 'Role:', user.role);
         return true;
       }
       return false;
@@ -183,6 +242,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const logout = async () => {
     try {
+      console.log('User logged out:', currentUser?.name);
       await saveCurrentUser(null);
       setCurrentUser(null);
     } catch (error) {
@@ -192,7 +252,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Settings operations
-  const updateSettings = async (updates: Partial<AppSettings>) => {
+  const updateSettingsHandler = async (updates: Partial<AppSettings>) => {
     try {
       const newSettings = { ...settings, ...updates };
       await saveSettings(newSettings);
@@ -202,6 +262,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (updates.darkMode !== undefined) {
         setColorScheme(updates.darkMode);
       }
+      
+      console.log('Settings updated');
     } catch (error) {
       console.error('Error updating settings:', error);
       throw error;
@@ -209,32 +271,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const setLanguage = async (lang: Language) => {
-    await updateSettings({ language: lang });
+    await updateSettingsHandler({ language: lang });
   };
 
   const setDarkMode = async (enabled: boolean) => {
-    await updateSettings({ darkMode: enabled });
+    await updateSettingsHandler({ darkMode: enabled });
   };
 
   return (
     <AppContext.Provider
       value={{
         menuItems,
-        addMenuItem,
-        updateMenuItem,
-        deleteMenuItem,
+        addMenuItem: addMenuItemHandler,
+        updateMenuItem: updateMenuItemHandler,
+        deleteMenuItem: deleteMenuItemHandler,
         orders,
-        addOrder,
-        updateOrder,
+        addOrder: addOrderHandler,
+        updateOrder: updateOrderHandler,
         currentUser,
         login,
         logout,
         settings,
-        updateSettings,
+        updateSettings: updateSettingsHandler,
         language: settings.language,
         setLanguage,
         darkMode: settings.darkMode || false,
         setDarkMode,
+        hasAdminPermission: checkHasAdminPermission,
+        canEditMenu: checkCanEditMenu,
+        canDeleteMenu: checkCanDeleteMenu,
+        canAddMenuItem: checkCanAddMenuItem,
+        canUpdateMenuItem: checkCanUpdateMenuItem,
+        canCreateOrder: checkCanCreateOrder,
+        canUpdateOrderStatus: checkCanUpdateOrderStatus,
+        canProcessPayment: checkCanProcessPayment,
+        canManageSettings: checkCanManageSettings,
         loading,
       }}
     >

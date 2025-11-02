@@ -6,11 +6,13 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { useApp } from '@/contexts/AppContext';
 import { translations } from '@/utils/translations';
+import { getRoleDisplayName } from '@/utils/permissions';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { currentUser, logout, language, menuItems, orders } = useApp();
+  const { currentUser, logout, language, menuItems, orders, hasAdminPermission } = useApp();
   const t = translations[language];
+  const isAdmin = hasAdminPermission();
 
   const handleLogout = async () => {
     Alert.alert(
@@ -100,7 +102,7 @@ export default function HomeScreen() {
               </Text>
               <Text style={styles.userName}>{currentUser?.name || 'User'}</Text>
               <Text style={styles.userRole}>
-                {currentUser?.role.charAt(0).toUpperCase() + currentUser?.role.slice(1)}
+                {currentUser ? getRoleDisplayName(currentUser.role, language) : 'User'}
               </Text>
             </View>
             <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
@@ -121,6 +123,18 @@ export default function HomeScreen() {
               <Text style={styles.statLabel}>{t.totalRevenue}</Text>
             </View>
           </View>
+
+          {/* Permission Notice for Non-Admin */}
+          {!isAdmin && (
+            <View style={styles.permissionNotice}>
+              <IconSymbol name="info.circle.fill" color={colors.info} size={20} />
+              <Text style={styles.permissionNoticeText}>
+                {language === 'en'
+                  ? 'You have view-only access. Contact an administrator to make changes.'
+                  : 'သင့်တွင် ကြည့်ရှုခွင့်သာရှိသည်။ ပြောင်းလဲမှုများပြုလုပ်ရန် စီမံခန့်ခွဲသူကို ဆက်သွယ်ပါ။'}
+              </Text>
+            </View>
+          )}
 
           {/* Pending Orders Alert */}
           {pendingOrders.length > 0 && (
@@ -217,6 +231,23 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     padding: 8,
+  },
+  permissionNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.info + '20',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.info + '40',
+  },
+  permissionNoticeText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 18,
   },
   headerButton: {
     padding: 8,

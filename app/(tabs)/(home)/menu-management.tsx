@@ -16,9 +16,20 @@ import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { useApp } from '@/contexts/AppContext';
 import { translations } from '@/utils/translations';
 import { MenuItem } from '@/types';
+import { getPermissionDeniedMessage, getRoleDisplayName } from '@/utils/permissions';
 
 export default function MenuManagementScreen() {
-  const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem, language } = useApp();
+  const { 
+    menuItems, 
+    addMenuItem, 
+    updateMenuItem, 
+    deleteMenuItem, 
+    language,
+    currentUser,
+    canAddMenuItem: checkCanAdd,
+    canEditMenu: checkCanEdit,
+    canDeleteMenu: checkCanDelete,
+  } = useApp();
   const t = translations[language];
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -33,6 +44,14 @@ export default function MenuManagementScreen() {
   const categories = [...new Set(menuItems.map(item => item.category))];
 
   const openAddModal = () => {
+    if (!checkCanAdd()) {
+      Alert.alert(
+        t.permissionDenied || 'Permission Denied',
+        getPermissionDeniedMessage(language)
+      );
+      return;
+    }
+
     setEditingItem(null);
     setFormData({
       name: '',
@@ -44,6 +63,14 @@ export default function MenuManagementScreen() {
   };
 
   const openEditModal = (item: MenuItem) => {
+    if (!checkCanEdit()) {
+      Alert.alert(
+        t.permissionDenied || 'Permission Denied',
+        getPermissionDeniedMessage(language)
+      );
+      return;
+    }
+
     setEditingItem(item);
     setFormData({
       name: item.name,
@@ -92,13 +119,28 @@ export default function MenuManagementScreen() {
         Alert.alert(t.success || 'Success', 'Menu item added successfully');
       }
       setModalVisible(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving menu item:', error);
-      Alert.alert(t.error || 'Error', 'Failed to save menu item');
+      if (error.message === 'PERMISSION_DENIED') {
+        Alert.alert(
+          t.permissionDenied || 'Permission Denied',
+          getPermissionDeniedMessage(language)
+        );
+      } else {
+        Alert.alert(t.error || 'Error', 'Failed to save menu item');
+      }
     }
   };
 
   const handleDelete = (item: MenuItem) => {
+    if (!checkCanDelete()) {
+      Alert.alert(
+        t.permissionDenied || 'Permission Denied',
+        getPermissionDeniedMessage(language)
+      );
+      return;
+    }
+
     Alert.alert(
       t.confirmDelete || 'Confirm Delete',
       `Are you sure you want to delete "${item.name}"?`,
@@ -111,9 +153,16 @@ export default function MenuManagementScreen() {
             try {
               await deleteMenuItem(item.id);
               Alert.alert(t.success || 'Success', 'Menu item deleted successfully');
-            } catch (error) {
+            } catch (error: any) {
               console.error('Error deleting menu item:', error);
-              Alert.alert(t.error || 'Error', 'Failed to delete menu item');
+              if (error.message === 'PERMISSION_DENIED') {
+                Alert.alert(
+                  t.permissionDenied || 'Permission Denied',
+                  getPermissionDeniedMessage(language)
+                );
+              } else {
+                Alert.alert(t.error || 'Error', 'Failed to delete menu item');
+              }
             }
           },
         },
@@ -122,11 +171,26 @@ export default function MenuManagementScreen() {
   };
 
   const toggleAvailability = async (item: MenuItem) => {
+    if (!checkCanEdit()) {
+      Alert.alert(
+        t.permissionDenied || 'Permission Denied',
+        getPermissionDeniedMessage(language)
+      );
+      return;
+    }
+
     try {
       await updateMenuItem(item.id, { available: !item.available });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating availability:', error);
-      Alert.alert(t.error || 'Error', 'Failed to update availability');
+      if (error.message === 'PERMISSION_DENIED') {
+        Alert.alert(
+          t.permissionDenied || 'Permission Denied',
+          getPermissionDeniedMessage(language)
+        );
+      } else {
+        Alert.alert(t.error || 'Error', 'Failed to update availability');
+      }
     }
   };
 
@@ -138,6 +202,8 @@ export default function MenuManagementScreen() {
     return acc;
   }, {} as Record<string, MenuItem[]>);
 
+  const canModify = checkCanEdit() || checkCanDelete() || checkCanAdd();
+
   return (
     <View style={commonStyles.container}>
       <ScrollView
@@ -145,6 +211,18 @@ export default function MenuManagementScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Permission Notice */}
+        {!canModify && (
+          <View style={styles.permissionNotice}>
+            <IconSymbol name="lock.fill" size={20} color={colors.warning} />
+            <Text style={styles.permissionNoticeText}>
+              {language === 'en'
+                ? `You are logged in as ${getRoleDisplayName(currentUser?.role || 'cashier', language)}. Only administrators can modify menu items.`
+                : `သင်သည် ${getRoleDisplayName(currentUser?.role || 'cashier', language)} အဖြစ် ဝင်ရောက်ထားသည်။ စီမံခန့်ခွဲသူများသာ မီနူးပစ္စည်းများကို ပြုပြင်နိုင်ပါသည်။`}
+            </Text>
+          </View>
+        )}
+
         {/* Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
@@ -184,36 +262,45 @@ export default function MenuManagementScreen() {
                       onValueChange={() => toggleAvailability(item)}
                       trackColor={{ false: colors.border, true: colors.success }}
                       thumbColor="#FFFFFF"
+                      disabled={!checkCanEdit()}
                     />
                     <Text style={styles.availabilityText}>
                       {item.available ? 'Available' : 'Unavailable'}
                     </Text>
                   </View>
                 </View>
-                <View style={styles.menuItemActions}>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => openEditModal(item)}
-                  >
-                    <IconSymbol name="pencil" size={20} color={colors.primary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => handleDelete(item)}
-                  >
-                    <IconSymbol name="trash" size={20} color={colors.danger} />
-                  </TouchableOpacity>
-                </View>
+                {canModify && (
+                  <View style={styles.menuItemActions}>
+                    {checkCanEdit() && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => openEditModal(item)}
+                      >
+                        <IconSymbol name="pencil" size={20} color={colors.primary} />
+                      </TouchableOpacity>
+                    )}
+                    {checkCanDelete() && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleDelete(item)}
+                      >
+                        <IconSymbol name="trash" size={20} color={colors.danger} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
               </View>
             ))}
           </View>
         ))}
       </ScrollView>
 
-      {/* Add Button */}
-      <TouchableOpacity style={styles.fab} onPress={openAddModal}>
-        <IconSymbol name="plus" size={24} color="#FFFFFF" />
-      </TouchableOpacity>
+      {/* Add Button - Only show for admin */}
+      {checkCanAdd() && (
+        <TouchableOpacity style={styles.fab} onPress={openAddModal}>
+          <IconSymbol name="plus" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      )}
 
       {/* Add/Edit Modal */}
       <Modal
@@ -305,6 +392,23 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 80,
+  },
+  permissionNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.warning + '20',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.warning + '40',
+  },
+  permissionNoticeText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 18,
   },
   statsContainer: {
     flexDirection: 'row',

@@ -15,6 +15,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { getColors } from '@/styles/commonStyles';
 import { useApp } from '@/contexts/AppContext';
 import { translations } from '@/utils/translations';
+import { getRoleDisplayName } from '@/utils/permissions';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -119,9 +120,17 @@ export default function ProfileScreen() {
             <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{currentUser?.email || 'user@example.com'}</Text>
             <View style={[styles.roleBadge, { backgroundColor: colors.primary }]}>
               <Text style={styles.roleText}>
-                {currentUser?.role.charAt(0).toUpperCase() + currentUser?.role.slice(1)}
+                {currentUser ? getRoleDisplayName(currentUser.role, language) : 'User'}
               </Text>
             </View>
+            {currentUser?.role === 'admin' && (
+              <View style={[styles.adminBadge, { backgroundColor: colors.success + '20', borderColor: colors.success }]}>
+                <IconSymbol name="checkmark.shield.fill" size={16} color={colors.success} />
+                <Text style={[styles.adminBadgeText, { color: colors.success }]}>
+                  {language === 'en' ? 'Full Access' : 'အပြည့်အဝ ဝင်ရောက်ခွင့်'}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Settings */}
@@ -287,6 +296,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     textTransform: 'capitalize',
+  },
+  adminBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginTop: 8,
+    borderWidth: 1,
+  },
+  adminBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   section: {
     marginBottom: 24,
