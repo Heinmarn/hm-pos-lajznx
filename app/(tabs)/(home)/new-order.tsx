@@ -27,6 +27,9 @@ export default function NewOrderScreen() {
   const [selectedItems, setSelectedItems] = useState<Map<string, number>>(new Map());
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Number of tables available (you can make this configurable later)
+  const totalTables = 10;
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -47,14 +50,41 @@ export default function NewOrderScreen() {
       color: colors.text,
       marginBottom: 12,
     },
-    input: {
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      padding: 12,
+    tableSelectionContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+      marginBottom: 8,
+    },
+    tableButton: {
+      width: Platform.select({ ios: 70, android: 70, default: 80 }),
+      height: Platform.select({ ios: 70, android: 70, default: 80 }),
+      backgroundColor: '#FF4444',
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: '#CC0000',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    tableButtonSelected: {
+      backgroundColor: '#00CC00',
+      borderColor: '#009900',
+      transform: [{ scale: 1.05 }],
+    },
+    tableButtonContent: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tableButtonText: {
       fontSize: 16,
-      color: colors.text,
+      fontWeight: '700',
+      color: '#FFFFFF',
+      marginTop: 4,
     },
     searchBar: {
       flexDirection: 'row',
@@ -237,9 +267,13 @@ export default function NewOrderScreen() {
     return total;
   };
 
+  const handleTableSelect = (tableNum: number) => {
+    setTableNumber(tableNum.toString());
+  };
+
   const handleSubmitOrder = async () => {
     if (!tableNumber.trim()) {
-      Alert.alert(t.error, language === 'en' ? 'Please enter table number' : 'စားပွဲနံပါတ်ထည့်ပါ');
+      Alert.alert(t.error, language === 'en' ? 'Please select a table' : 'စားပွဲရွေးပါ');
       return;
     }
 
@@ -301,17 +335,36 @@ export default function NewOrderScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Table Number Input */}
+        {/* Table Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t.tableNumber}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={language === 'en' ? 'Enter table number' : 'စားပွဲနံပါတ်ထည့်ပါ'}
-            placeholderTextColor={colors.textSecondary}
-            value={tableNumber}
-            onChangeText={setTableNumber}
-            keyboardType="numeric"
-          />
+          <Text style={styles.sectionTitle}>
+            {language === 'en' ? 'Select Table' : 'စားပွဲရွေးပါ'}
+          </Text>
+          <View style={styles.tableSelectionContainer}>
+            {Array.from({ length: totalTables }, (_, i) => i + 1).map((tableNum) => {
+              const isSelected = tableNumber === tableNum.toString();
+              return (
+                <TouchableOpacity
+                  key={tableNum}
+                  style={[
+                    styles.tableButton,
+                    isSelected && styles.tableButtonSelected,
+                  ]}
+                  onPress={() => handleTableSelect(tableNum)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.tableButtonContent}>
+                    <IconSymbol 
+                      name="table.furniture" 
+                      color="#FFFFFF" 
+                      size={28} 
+                    />
+                    <Text style={styles.tableButtonText}>T-{tableNum}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         {/* Selected Items Summary */}
