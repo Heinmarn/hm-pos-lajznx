@@ -1,161 +1,322 @@
-import React from "react";
-import { Stack, Link } from "expo-router";
-import { FlatList, Pressable, StyleSheet, View, Text, Alert, Platform } from "react-native";
-import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
 
-const ICON_COLOR = "#007AFF";
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, commonStyles } from '@/styles/commonStyles';
+import { useApp } from '@/contexts/AppContext';
+import { translations } from '@/utils/translations';
 
 export default function HomeScreen() {
-  const theme = useTheme();
-  const modalDemos = [
+  const router = useRouter();
+  const { currentUser, logout, language, menuItems, orders } = useApp();
+  const t = translations[language];
+
+  const handleLogout = async () => {
+    Alert.alert(
+      t.logout,
+      'Are you sure you want to logout?',
+      [
+        { text: t.cancel, style: 'cancel' },
+        {
+          text: t.logout,
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/login');
+          },
+        },
+      ]
+    );
+  };
+
+  const quickActions = [
     {
-      title: "Standard Modal",
-      description: "Full screen modal presentation",
-      route: "/modal",
-      color: "#007AFF",
+      title: t.newOrder,
+      icon: 'plus.circle.fill',
+      color: colors.primary,
+      onPress: () => router.push('/new-order'),
     },
     {
-      title: "Form Sheet",
-      description: "Bottom sheet with detents and grabber",
-      route: "/formsheet",
-      color: "#34C759",
+      title: t.menuManagement,
+      icon: 'list.bullet',
+      color: colors.accent,
+      onPress: () => router.push('/menu-management'),
     },
     {
-      title: "Transparent Modal",
-      description: "Overlay without obscuring background",
-      route: "/transparent-modal",
-      color: "#FF9500",
-    }
+      title: t.kitchenOrders,
+      icon: 'flame.fill',
+      color: colors.warning,
+      onPress: () => router.push('/(tabs)/kitchen'),
+    },
+    {
+      title: t.salesReport,
+      icon: 'chart.bar.fill',
+      color: colors.info,
+      onPress: () => router.push('/(tabs)/reports'),
+    },
   ];
 
-  const renderModalDemo = ({ item }: { item: (typeof modalDemos)[0] }) => (
-    <GlassView style={[
-      styles.demoCard,
-      Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-    ]} glassEffectStyle="regular">
-      <View style={[styles.demoIcon, { backgroundColor: item.color }]}>
-        <IconSymbol name="square.grid.3x3" color="white" size={24} />
-      </View>
-      <View style={styles.demoContent}>
-        <Text style={[styles.demoTitle, { color: theme.colors.text }]}>{item.title}</Text>
-        <Text style={[styles.demoDescription, { color: theme.dark ? '#98989D' : '#666' }]}>{item.description}</Text>
-      </View>
-      <Link href={item.route as any} asChild>
-        <Pressable>
-          <GlassView style={[
-            styles.tryButton,
-            Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)' }
-          ]} glassEffectStyle="clear">
-            <Text style={[styles.tryButtonText, { color: theme.colors.primary }]}>Try It</Text>
-          </GlassView>
-        </Pressable>
-      </Link>
-    </GlassView>
-  );
+  const todayOrders = orders.filter(order => {
+    const orderDate = new Date(order.createdAt);
+    const today = new Date();
+    return orderDate.toDateString() === today.toDateString();
+  });
 
-  const renderHeaderRight = () => (
-    <Pressable
-      onPress={() => Alert.alert("Not Implemented", "This feature is not implemented yet")}
-      style={styles.headerButtonContainer}
-    >
-      <IconSymbol name="plus" color={theme.colors.primary} />
-    </Pressable>
-  );
+  const todayRevenue = todayOrders
+    .filter(o => o.paymentStatus === 'paid')
+    .reduce((sum, order) => sum + order.total, 0);
 
-  const renderHeaderLeft = () => (
-    <Pressable
-      onPress={() => Alert.alert("Not Implemented", "This feature is not implemented yet")}
-      style={styles.headerButtonContainer}
-    >
-      <IconSymbol
-        name="gear"
-        color={theme.colors.primary}
-      />
-    </Pressable>
-  );
+  const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'preparing');
 
   return (
     <>
       {Platform.OS === 'ios' && (
         <Stack.Screen
           options={{
-            title: "Building the app...",
-            headerRight: renderHeaderRight,
-            headerLeft: renderHeaderLeft,
+            title: t.appName,
+            headerRight: () => (
+              <TouchableOpacity onPress={() => router.push('/settings')} style={styles.headerButton}>
+                <IconSymbol name="gear" color={colors.text} size={24} />
+              </TouchableOpacity>
+            ),
           }}
         />
       )}
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <FlatList
-          data={modalDemos}
-          renderItem={renderModalDemo}
-          keyExtractor={(item) => item.route}
+      <View style={[commonStyles.container]}>
+        <ScrollView 
+          style={styles.scrollView}
           contentContainerStyle={[
-            styles.listContainer,
-            Platform.OS !== 'ios' && styles.listContainerWithTabBar
+            styles.content,
+            Platform.OS !== 'ios' && styles.contentWithTabBar
           ]}
-          contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
-        />
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.greeting}>
+                {language === 'en' ? 'Welcome back,' : 'ပြန်လည်ကြိုဆိုပါတယ်,'}
+              </Text>
+              <Text style={styles.userName}>{currentUser?.name || 'User'}</Text>
+              <Text style={styles.userRole}>
+                {currentUser?.role.charAt(0).toUpperCase() + currentUser?.role.slice(1)}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <IconSymbol name="rectangle.portrait.and.arrow.right" color={colors.secondary} size={24} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Stats Cards */}
+          <View style={styles.statsContainer}>
+            <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
+              <IconSymbol name="cart.fill" color="#FFFFFF" size={32} />
+              <Text style={styles.statValue}>{todayOrders.length}</Text>
+              <Text style={styles.statLabel}>{t.today} {t.orders}</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: colors.accent }]}>
+              <IconSymbol name="dollarsign.circle.fill" color="#FFFFFF" size={32} />
+              <Text style={styles.statValue}>{todayRevenue.toLocaleString()}</Text>
+              <Text style={styles.statLabel}>{t.totalRevenue}</Text>
+            </View>
+          </View>
+
+          {/* Pending Orders Alert */}
+          {pendingOrders.length > 0 && (
+            <TouchableOpacity 
+              style={styles.alertCard}
+              onPress={() => router.push('/(tabs)/kitchen')}
+            >
+              <IconSymbol name="exclamationmark.triangle.fill" color={colors.warning} size={24} />
+              <View style={styles.alertContent}>
+                <Text style={styles.alertTitle}>
+                  {pendingOrders.length} {t.pending} {t.orders}
+                </Text>
+                <Text style={styles.alertText}>Tap to view in kitchen</Text>
+              </View>
+              <IconSymbol name="chevron.right" color={colors.textSecondary} size={20} />
+            </TouchableOpacity>
+          )}
+
+          {/* Quick Actions */}
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.actionsGrid}>
+            {quickActions.map((action, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.actionCard}
+                onPress={action.onPress}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: action.color }]}>
+                  <IconSymbol name={action.icon} color="#FFFFFF" size={28} />
+                </View>
+                <Text style={styles.actionTitle}>{action.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Menu Summary */}
+          <Text style={styles.sectionTitle}>{t.menu} Summary</Text>
+          <View style={commonStyles.card}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Total Items:</Text>
+              <Text style={styles.summaryValue}>{menuItems.length}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Available:</Text>
+              <Text style={[styles.summaryValue, { color: colors.success }]}>
+                {menuItems.filter(item => item.available).length}
+              </Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Unavailable:</Text>
+              <Text style={[styles.summaryValue, { color: colors.secondary }]}>
+                {menuItems.filter(item => !item.available).length}
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
       </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    // backgroundColor handled dynamically
   },
-  listContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  listContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
-  },
-  demoCard: {
-    borderRadius: 12,
+  content: {
     padding: 16,
-    marginBottom: 12,
+    paddingBottom: 20,
+  },
+  contentWithTabBar: {
+    paddingBottom: 100,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+  },
+  greeting: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  userRole: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textTransform: 'capitalize',
+  },
+  logoutButton: {
+    padding: 8,
+  },
+  headerButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  statCard: {
+    flex: 1,
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  alertCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FFF3CD',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 20,
+    gap: 12,
   },
-  demoIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  demoContent: {
+  alertContent: {
     flex: 1,
   },
-  demoTitle: {
-    fontSize: 18,
+  alertTitle: {
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
-    // color handled dynamically
+    color: colors.text,
+    marginBottom: 2,
   },
-  demoDescription: {
+  alertText: {
     fontSize: 14,
-    lineHeight: 18,
-    // color handled dynamically
+    color: colors.textSecondary,
   },
-  headerButtonContainer: {
-    padding: 6,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 16,
   },
-  tryButton: {
-    paddingHorizontal: 16,
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  actionCard: {
+    width: '48%',
+    backgroundColor: colors.card,
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  actionIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  actionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 8,
-    borderRadius: 6,
   },
-  tryButtonText: {
-    fontSize: 14,
+  summaryLabel: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  summaryValue: {
+    fontSize: 16,
     fontWeight: '600',
-    // color handled dynamically
+    color: colors.text,
   },
 });

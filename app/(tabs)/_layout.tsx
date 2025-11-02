@@ -1,11 +1,13 @@
+
 import React from 'react';
 import { Platform } from 'react-native';
 import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
 import { Stack } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
+import { colors } from '@/styles/commonStyles';
 
 export default function TabLayout() {
-  // Define the tabs configuration
+  // Define the tabs configuration for POS system
   const tabs: TabBarItem[] = [
     {
       name: '(home)',
@@ -14,10 +16,22 @@ export default function TabLayout() {
       label: 'Home',
     },
     {
-      name: 'profile',
-      route: '/(tabs)/profile',
-      icon: 'person.fill',
-      label: 'Profile',
+      name: 'orders',
+      route: '/(tabs)/orders',
+      icon: 'list.bullet.clipboard.fill',
+      label: 'Orders',
+    },
+    {
+      name: 'kitchen',
+      route: '/(tabs)/kitchen',
+      icon: 'flame.fill',
+      label: 'Kitchen',
+    },
+    {
+      name: 'reports',
+      route: '/(tabs)/reports',
+      icon: 'chart.bar.fill',
+      label: 'Reports',
     },
   ];
 
@@ -29,9 +43,17 @@ export default function TabLayout() {
           <Icon sf="house.fill" drawable="ic_home" />
           <Label>Home</Label>
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="profile">
-          <Icon sf="person.fill" drawable="ic_profile" />
-          <Label>Profile</Label>
+        <NativeTabs.Trigger name="orders">
+          <Icon sf="list.bullet.clipboard.fill" drawable="ic_orders" />
+          <Label>Orders</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="kitchen">
+          <Icon sf="flame.fill" drawable="ic_kitchen" />
+          <Label>Kitchen</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="reports">
+          <Icon sf="chart.bar.fill" drawable="ic_reports" />
+          <Label>Reports</Label>
         </NativeTabs.Trigger>
       </NativeTabs>
     );
@@ -43,11 +65,13 @@ export default function TabLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: 'none', // Remove fade animation to prevent black screen flash
+          animation: 'none',
         }}
       >
         <Stack.Screen name="(home)" />
-        <Stack.Screen name="profile" />
+        <Stack.Screen name="orders" />
+        <Stack.Screen name="kitchen" />
+        <Stack.Screen name="reports" />
       </Stack>
       <FloatingTabBar tabs={tabs} />
     </>
