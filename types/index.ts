@@ -73,4 +73,5 @@ export interface AppSettings {
   currency?: string;
   notifications?: boolean;
   autoPrint?: boolean;
+  darkMode?: boolean;
 }

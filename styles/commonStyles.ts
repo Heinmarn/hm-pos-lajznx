@@ -1,21 +1,51 @@
 
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
-// POS System Color Scheme - Clean and Professional
-export const colors = {
-  background: '#F5F5F5',        // Light Gray
-  text: '#333333',              // Dark Gray
-  textSecondary: '#666666',     // Medium Gray
-  primary: '#4CAF50',           // Green - for confirm actions
-  secondary: '#F44336',         // Red - for cancel actions
-  accent: '#2196F3',            // Blue - for info/actions
-  card: '#FFFFFF',              // White
-  highlight: '#E0E0E0',         // Light Gray - for subtle highlights
-  border: '#DDDDDD',            // Border color
+// Light Mode Colors
+export const lightColors = {
+  background: '#F5F5F5',
+  text: '#333333',
+  textSecondary: '#666666',
+  primary: '#4CAF50',
+  secondary: '#F44336',
+  accent: '#2196F3',
+  card: '#FFFFFF',
+  highlight: '#E0E0E0',
+  border: '#DDDDDD',
   success: '#4CAF50',
   warning: '#FF9800',
   error: '#F44336',
+  danger: '#F44336',
   info: '#2196F3',
+};
+
+// Dark Mode Colors
+export const darkColors = {
+  background: '#121212',
+  text: '#FFFFFF',
+  textSecondary: '#B0B0B0',
+  primary: '#66BB6A',
+  secondary: '#EF5350',
+  accent: '#42A5F5',
+  card: '#1E1E1E',
+  highlight: '#2C2C2C',
+  border: '#333333',
+  success: '#66BB6A',
+  warning: '#FFA726',
+  error: '#EF5350',
+  danger: '#EF5350',
+  info: '#42A5F5',
+};
+
+// Default to light colors (will be updated by context)
+export let colors = lightColors;
+
+export const setColorScheme = (isDark: boolean) => {
+  colors = isDark ? darkColors : lightColors;
+};
+
+export const getColors = (isDark: boolean) => {
+  return isDark ? darkColors : lightColors;
 };
 
 export const buttonStyles = StyleSheet.create({
@@ -41,6 +71,16 @@ export const buttonStyles = StyleSheet.create({
   },
   accent: {
     backgroundColor: colors.accent,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  danger: {
+    backgroundColor: colors.danger,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,

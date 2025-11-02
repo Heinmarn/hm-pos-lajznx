@@ -14,6 +14,7 @@ import {
   updateOrder as updateOrderInStorage,
 } from '@/utils/storage';
 import { sampleMenuItems, sampleUsers } from '@/utils/sampleData';
+import { setColorScheme } from '@/styles/commonStyles';
 
 interface AppContextType {
   // Menu
@@ -37,6 +38,8 @@ interface AppContextType {
   updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
   language: Language;
   setLanguage: (lang: Language) => Promise<void>;
+  darkMode: boolean;
+  setDarkMode: (enabled: boolean) => Promise<void>;
   
   // Loading
   loading: boolean;
@@ -54,6 +57,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     currency: 'MMK',
     notifications: true,
     autoPrint: false,
+    darkMode: false,
   });
   const [loading, setLoading] = useState(true);
 
@@ -62,6 +66,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     initializeApp();
   }, []);
 
+  // Update color scheme when dark mode changes
+  useEffect(() => {
+    setColorScheme(settings.darkMode || false);
+  }, [settings.darkMode]);
+
   const initializeApp = async () => {
     try {
       console.log('Initializing app...');
@@ -69,6 +78,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Load settings
       const loadedSettings = await getSettings();
       setSettings(loadedSettings);
+      setColorScheme(loadedSettings.darkMode || false);
       
       // Load menu items
       let loadedMenuItems = await getMenuItems();
@@ -187,6 +197,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newSettings = { ...settings, ...updates };
       await saveSettings(newSettings);
       setSettings(newSettings);
+      
+      // Update color scheme if dark mode changed
+      if (updates.darkMode !== undefined) {
+        setColorScheme(updates.darkMode);
+      }
     } catch (error) {
       console.error('Error updating settings:', error);
       throw error;
@@ -195,6 +210,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const setLanguage = async (lang: Language) => {
     await updateSettings({ language: lang });
+  };
+
+  const setDarkMode = async (enabled: boolean) => {
+    await updateSettings({ darkMode: enabled });
   };
 
   return (
@@ -214,6 +233,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateSettings,
         language: settings.language,
         setLanguage,
+        darkMode: settings.darkMode || false,
+        setDarkMode,
         loading,
       }}
     >

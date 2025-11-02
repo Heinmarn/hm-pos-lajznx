@@ -3,15 +3,16 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { getColors } from '@/styles/commonStyles';
 import { useApp } from '@/contexts/AppContext';
 import { translations } from '@/utils/translations';
 
 type ReportPeriod = 'daily' | 'weekly' | 'monthly';
 
 export default function ReportsScreen() {
-  const { orders, language } = useApp();
+  const { orders, language, darkMode } = useApp();
   const t = translations[language];
+  const colors = getColors(darkMode);
   const [period, setPeriod] = useState<ReportPeriod>('daily');
 
   const reportData = useMemo(() => {
@@ -42,22 +43,21 @@ export default function ReportsScreen() {
     const totalOrders = filteredOrders.length;
     const paidOrders = filteredOrders.filter(o => o.paymentStatus === 'paid');
     const totalRevenue = paidOrders.reduce((sum, order) => sum + order.total, 0);
-    const averageOrderValue = totalOrders > 0 ? totalRevenue / paidOrders.length : 0;
+    const averageOrderValue = paidOrders.length > 0 ? totalRevenue / paidOrders.length : 0;
 
     // Item breakdown
-    const itemMap = new Map<string, { name: string; nameMM: string; quantity: number; revenue: number }>();
+    const itemMap = new Map<string, { name: string; quantity: number; revenue: number }>();
     paidOrders.forEach(order => {
       order.items.forEach(item => {
         const existing = itemMap.get(item.menuItemId);
         if (existing) {
           existing.quantity += item.quantity;
-          existing.revenue += item.subtotal;
+          existing.revenue += item.price * item.quantity;
         } else {
           itemMap.set(item.menuItemId, {
-            name: item.menuItem.name,
-            nameMM: item.menuItem.nameMM,
+            name: item.name,
             quantity: item.quantity,
-            revenue: item.subtotal,
+            revenue: item.price * item.quantity,
           });
         }
       });
@@ -100,16 +100,173 @@ export default function ReportsScreen() {
     { key: 'monthly', label: t.monthly },
   ];
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: 16,
+      paddingBottom: 20,
+    },
+    contentWithTabBar: {
+      paddingBottom: 100,
+    },
+    periodSelector: {
+      flexDirection: 'row',
+      backgroundColor: colors.card,
+      borderRadius: 8,
+      padding: 4,
+      marginBottom: 20,
+      gap: 4,
+    },
+    periodTab: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 6,
+      alignItems: 'center',
+    },
+    periodTabActive: {
+      backgroundColor: colors.primary,
+    },
+    periodTabText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    periodTabTextActive: {
+      color: '#FFFFFF',
+    },
+    summaryGrid: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 20,
+    },
+    summaryCard: {
+      flex: 1,
+      padding: 20,
+      borderRadius: 12,
+      alignItems: 'center',
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+      elevation: 3,
+    },
+    summaryValue: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: '#FFFFFF',
+      marginTop: 12,
+      marginBottom: 4,
+    },
+    summaryLabel: {
+      fontSize: 12,
+      color: '#FFFFFF',
+      opacity: 0.9,
+      textAlign: 'center',
+    },
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 12,
+      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+      elevation: 2,
+    },
+    statRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 8,
+    },
+    statLabel: {
+      fontSize: 16,
+      color: colors.text,
+    },
+    statValue: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 12,
+    },
+    itemRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    itemInfo: {
+      flex: 1,
+    },
+    itemName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    itemQuantity: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    itemRevenue: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    paymentRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    paymentInfo: {
+      flex: 1,
+    },
+    paymentMethod: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 4,
+      textTransform: 'capitalize',
+    },
+    paymentCount: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    paymentTotal: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.accent,
+    },
+    emptyText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      paddingVertical: 20,
+    },
+  });
+
   return (
     <>
       {Platform.OS === 'ios' && (
         <Stack.Screen
           options={{
             title: t.salesReport,
+            headerStyle: {
+              backgroundColor: colors.card,
+            },
+            headerTintColor: colors.text,
           }}
         />
       )}
-      <View style={commonStyles.container}>
+      <View style={styles.container}>
         <ScrollView
           contentContainerStyle={[
             styles.content,
@@ -146,11 +303,11 @@ export default function ReportsScreen() {
             </View>
           </View>
 
-          <View style={commonStyles.card}>
+          <View style={styles.card}>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Average Order Value:</Text>
               <Text style={styles.statValue}>
-                {reportData.averageOrderValue.toLocaleString()} MMK
+                {reportData.averageOrderValue.toLocaleString()} {t.currencySymbol || 'Ks'}
               </Text>
             </View>
           </View>
@@ -158,21 +315,19 @@ export default function ReportsScreen() {
           {/* Item Breakdown */}
           <Text style={styles.sectionTitle}>{t.itemBreakdown}</Text>
           {reportData.itemBreakdown.length > 0 ? (
-            <View style={commonStyles.card}>
+            <View style={styles.card}>
               {reportData.itemBreakdown.map((item, index) => (
                 <View key={index} style={styles.itemRow}>
                   <View style={styles.itemInfo}>
-                    <Text style={styles.itemName}>
-                      {language === 'mm' ? item.nameMM : item.name}
-                    </Text>
+                    <Text style={styles.itemName}>{item.name}</Text>
                     <Text style={styles.itemQuantity}>{item.quantity} sold</Text>
                   </View>
-                  <Text style={styles.itemRevenue}>{item.revenue.toLocaleString()} MMK</Text>
+                  <Text style={styles.itemRevenue}>{item.revenue.toLocaleString()} {t.currencySymbol || 'Ks'}</Text>
                 </View>
               ))}
             </View>
           ) : (
-            <View style={commonStyles.card}>
+            <View style={styles.card}>
               <Text style={styles.emptyText}>{t.empty}</Text>
             </View>
           )}
@@ -181,14 +336,14 @@ export default function ReportsScreen() {
           {reportData.paymentBreakdown.length > 0 && (
             <>
               <Text style={styles.sectionTitle}>Payment Methods</Text>
-              <View style={commonStyles.card}>
+              <View style={styles.card}>
                 {reportData.paymentBreakdown.map((payment, index) => (
                   <View key={index} style={styles.paymentRow}>
                     <View style={styles.paymentInfo}>
                       <Text style={styles.paymentMethod}>{t[payment.method]}</Text>
                       <Text style={styles.paymentCount}>{payment.count} transactions</Text>
                     </View>
-                    <Text style={styles.paymentTotal}>{payment.total.toLocaleString()} MMK</Text>
+                    <Text style={styles.paymentTotal}>{payment.total.toLocaleString()} {t.currencySymbol || 'Ks'}</Text>
                   </View>
                 ))}
               </View>
@@ -199,144 +354,3 @@ export default function ReportsScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 20,
-  },
-  contentWithTabBar: {
-    paddingBottom: 100,
-  },
-  periodSelector: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: 8,
-    padding: 4,
-    marginBottom: 20,
-    gap: 4,
-  },
-  periodTab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  periodTabActive: {
-    backgroundColor: colors.primary,
-  },
-  periodTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  periodTabTextActive: {
-    color: '#FFFFFF',
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  summaryCard: {
-    flex: 1,
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-    elevation: 3,
-  },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    opacity: 0.9,
-    textAlign: 'center',
-  },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  statLabel: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  itemInfo: {
-    flex: 1,
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  itemQuantity: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  itemRevenue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  paymentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  paymentInfo: {
-    flex: 1,
-  },
-  paymentMethod: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-    textTransform: 'capitalize',
-  },
-  paymentCount: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  paymentTotal: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.accent,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    paddingVertical: 20,
-  },
-});

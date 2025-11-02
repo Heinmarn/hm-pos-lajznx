@@ -12,15 +12,16 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { getColors } from '@/styles/commonStyles';
 import { useApp } from '@/contexts/AppContext';
 import { translations } from '@/utils/translations';
 import { Order, OrderItem, OrderStatus } from '@/types';
 
 export default function NewOrderScreen() {
   const router = useRouter();
-  const { menuItems, addOrder, language, currentUser } = useApp();
+  const { menuItems, addOrder, language, currentUser, darkMode } = useApp();
   const t = translations[language];
+  const colors = getColors(darkMode);
 
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
   const [tableNumber, setTableNumber] = useState('');
@@ -121,8 +122,197 @@ export default function NewOrderScreen() {
     }
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    content: {
+      padding: 16,
+      paddingBottom: 120,
+    },
+    section: {
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 12,
+    },
+    tableInput: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      color: colors.text,
+    },
+    categoryContainer: {
+      gap: 8,
+    },
+    categoryButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    categoryButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    categoryButtonText: {
+      fontSize: 14,
+      color: colors.text,
+      fontWeight: '600',
+    },
+    categoryButtonTextActive: {
+      color: '#FFFFFF',
+    },
+    menuGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+    },
+    menuItem: {
+      width: '48%',
+      backgroundColor: colors.card,
+      padding: 16,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    menuItemSelected: {
+      borderColor: colors.primary,
+      borderWidth: 2,
+    },
+    menuItemHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 8,
+    },
+    menuItemName: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      flex: 1,
+    },
+    quantityBadge: {
+      backgroundColor: colors.primary,
+      borderRadius: 12,
+      width: 24,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: 4,
+    },
+    quantityBadgeText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#FFFFFF',
+    },
+    menuItemPrice: {
+      fontSize: 14,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    selectedItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      padding: 12,
+      borderRadius: 8,
+      marginBottom: 8,
+    },
+    selectedItemInfo: {
+      flex: 1,
+    },
+    selectedItemName: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    selectedItemPrice: {
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+    quantityControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    quantityButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.border,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    quantityText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      minWidth: 24,
+      textAlign: 'center',
+    },
+    bottomBar: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: colors.card,
+      padding: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      boxShadow: '0px -2px 8px rgba(0, 0, 0, 0.1)',
+      elevation: 8,
+    },
+    totalContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    totalLabel: {
+      fontSize: 16,
+      color: colors.text,
+      fontWeight: '600',
+    },
+    totalAmount: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    submitButton: {
+      width: '100%',
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+      elevation: 2,
+    },
+    buttonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#FFFFFF',
+    },
+  });
+
   return (
-    <View style={commonStyles.container}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -199,7 +389,7 @@ export default function NewOrderScreen() {
                     )}
                   </View>
                   <Text style={styles.menuItemPrice}>
-                    {item.price.toLocaleString()} {t.currency || 'MMK'}
+                    {item.price.toLocaleString()} {t.currencySymbol || 'Ks'}
                   </Text>
                 </TouchableOpacity>
               );
@@ -246,189 +436,17 @@ export default function NewOrderScreen() {
           <View style={styles.totalContainer}>
             <Text style={styles.totalLabel}>{t.total || 'Total'}:</Text>
             <Text style={styles.totalAmount}>
-              {calculateTotal().toLocaleString()} {t.currency || 'MMK'}
+              {calculateTotal().toLocaleString()} {t.currencySymbol || 'Ks'}
             </Text>
           </View>
           <TouchableOpacity
-            style={[buttonStyles.primary, styles.submitButton]}
+            style={styles.submitButton}
             onPress={handleSubmitOrder}
           >
-            <Text style={commonStyles.buttonText}>{t.submitOrder || 'Submit Order'}</Text>
+            <Text style={styles.buttonText}>{t.submitOrder || 'Submit Order'}</Text>
           </TouchableOpacity>
         </View>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 120,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  tableInput: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: colors.text,
-  },
-  categoryContainer: {
-    gap: 8,
-  },
-  categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  categoryButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  categoryButtonText: {
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  categoryButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  menuGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  menuItem: {
-    width: '48%',
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  menuItemSelected: {
-    borderColor: colors.primary,
-    borderWidth: 2,
-  },
-  menuItemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  menuItemName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-  },
-  quantityBadge: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 4,
-  },
-  quantityBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  menuItemPrice: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  selectedItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  selectedItemInfo: {
-    flex: 1,
-  },
-  selectedItemName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  selectedItemPrice: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  quantityControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  quantityButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quantityText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    minWidth: 24,
-    textAlign: 'center',
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.card,
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    boxShadow: '0px -2px 8px rgba(0, 0, 0, 0.1)',
-    elevation: 8,
-  },
-  totalContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  totalLabel: {
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  totalAmount: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  submitButton: {
-    width: '100%',
-  },
-});

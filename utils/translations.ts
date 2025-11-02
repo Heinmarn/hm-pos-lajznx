@@ -17,6 +17,7 @@ export const translations = {
     // Auth
     login: 'Login',
     logout: 'Logout',
+    switchAccount: 'Switch Account',
     email: 'Email',
     password: 'Password',
     loginButton: 'Login',
@@ -90,7 +91,9 @@ export const translations = {
     english: 'English',
     myanmar: 'Myanmar',
     taxRate: 'Tax Rate',
-    currency: 'Currency',
+    currency: 'Kyats',
+    currencySymbol: 'Ks',
+    darkMode: 'Dark Mode',
     
     // Common
     search: 'Search',
@@ -121,6 +124,8 @@ export const translations = {
     submitOrder: 'Submit Order',
     notifications: 'Notifications',
     autoPrint: 'Auto Print',
+    logoutConfirm: 'Are you sure you want to logout?',
+    switchAccountConfirm: 'You will be logged out and redirected to the login screen.',
   },
   mm: {
     // App name
@@ -137,6 +142,7 @@ export const translations = {
     // Auth
     login: 'ဝင်ရောက်ရန်',
     logout: 'ထွက်ရန်',
+    switchAccount: 'အကောင့်ပြောင်းရန်',
     email: 'အီးမေးလ်',
     password: 'စကားဝှက်',
     loginButton: 'ဝင်ရောက်ရန်',
@@ -210,7 +216,9 @@ export const translations = {
     english: 'အင်္ဂလိပ်',
     myanmar: 'မြန်မာ',
     taxRate: 'အခွန်နှုန်း',
-    currency: 'ငွေကြေး',
+    currency: 'ကျပ်',
+    currencySymbol: 'ကျပ်',
+    darkMode: 'အမှောင်မုဒ်',
     
     // Common
     search: 'ရှာဖွေရန်',
@@ -241,6 +249,8 @@ export const translations = {
     submitOrder: 'အော်ဒါတင်ရန်',
     notifications: 'အသိပေးချက်များ',
     autoPrint: 'အလိုအလျောက်ပုံနှိပ်ရန်',
+    logoutConfirm: 'ထွက်ရန် သေချာပါသလား?',
+    switchAccountConfirm: 'သင့်အကောင့်မှ ထွက်ပြီး လော့ဂ်အင်စာမျက်နှာသို့ ပြန်သွားပါမည်။',
   },
 };
 
